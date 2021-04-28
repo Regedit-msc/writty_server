@@ -48,7 +48,8 @@ const PORT = process.env.PORT || 3001;
 
 
       } else {
-
+        socket.join("notAuser");
+        socket.emit("not_a_user");
       }
      
       socket.on("send-changes", delta => {
