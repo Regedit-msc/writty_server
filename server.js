@@ -19,12 +19,14 @@ const PORT = process.env.PORT || 3001;
 
 
 (async () => {
-  await mongoose.connect(process.env.MONGO_URI, {
+  mongoose.connect(process.env.MONGO_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
     useFindAndModify: false,
     useCreateIndex: true,
-  })
+  }).then(() => {
+    console.log("Connected to db");
+  }).catch((e) => console.log(e.message));
 
 
 
@@ -36,23 +38,32 @@ const PORT = process.env.PORT || 3001;
     },
   })
 
-  io.of("/doc").on("connection", socket => {
+  io.of("/editor").on("connection", socket => {
     console.log("connected to client");
-    socket.on("join-editor", async editorId => {
-
+    socket.on("join-editor", async ({ editorId, lang }) => {
+      const { code, foundTheCode } = await findCode(editorId, lang);
      
-      socket.join(editorId);
+      if (foundTheCode) {
+        socket.join(editorId);
+        socket.emit("load-code", code.data ?? '');
+      } else {
+        socket.join("notAuser");
+        socket.emit("not_a_user");
+      }
        
       socket.on("send-changes", ({ data, value }) => {
         socket.broadcast.to(editorId).emit("receive-changes", { data, value })
       })
+      socket.on("save-code", async data => {
+        await updateDoc({ _id: editorId }, { data });
+      })
     })
   })
 
-  async function findDocument(id) {
-    const { found, doc } = await findDoc({ _id: id });
-    if (found) return { doc, foundTheDoc: true };
-    return { doc: "You cannot connect to anyone until you create an account", foundTheDoc: false };
+  async function findCode(id, language) {
+    const { found, doc } = await findDoc({ _id: id, language: language });
+    if (found) return { code: doc, foundTheCode: true };
+    return { code: "You cannot connect to anyone until you create an account", foundTheCode: false };
   }
 
   app.post("/login", async (req, res, next) => {
@@ -111,12 +122,12 @@ const PORT = process.env.PORT || 3001;
   })
 
   app.post("/create/doc", extractJWT, async (req, res, next) => {
-    const { name, _id } = req.body;
+    const { name, _id, language } = req.body;
     const { username } = req.locals;
     const { found, user } = await findUser({ _id: username });
     if (found) {
-      const { saved } = await createDoc(name, _id, user._id);
-      if (saved) return res.status(200).json({ message: "New socument created", success: true })
+      const { saved } = await createDoc(name, _id, user._id, language.trim());
+      if (saved) return res.status(200).json({ message: "New document created", success: true })
     }
   });
 

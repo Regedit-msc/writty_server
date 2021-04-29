@@ -8,6 +8,10 @@ const docSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId, ref: 'user',
     required: true,
   },
+  language: {
+    type: String,
+    default: "javascript"
+  }
 })
 
 const Doc = new mongoose.model('document', docSchema)

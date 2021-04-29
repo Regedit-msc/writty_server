@@ -1,12 +1,13 @@
 
 const Doc = require("../../Document");
 
-async function createDoc(name, _id, userID) {
+async function createDoc(name, _id, userID, lang) {
 
     const doc = await Doc.create({
         name,
         _id,
-        user: userID
+        user: userID,
+        language: lang
     });
 
     if (doc) {
@@ -45,7 +46,7 @@ const findDoc = async (searchParam) => {
 
 const getAllDocsByUser = async (searchParam) => {
     try {
-        const docs = await Doc.find(searchParam).select('name user').lean().exec()
+        const docs = await Doc.find(searchParam).select('name user language').lean().exec()
         if (docs) return { foundDocs: true, docs };
         return { foundDocs: false };
     } catch {
