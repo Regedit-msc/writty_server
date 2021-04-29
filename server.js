@@ -38,26 +38,13 @@ const PORT = process.env.PORT || 3001;
 
   io.of("/doc").on("connection", socket => {
     console.log("connected to client");
-    socket.on("get-document", async documentId => {
+    socket.on("join-editor", async editorId => {
 
-      console.log(documentId);
-      const { doc, foundTheDoc } = await findDocument(documentId);
-      if (foundTheDoc) {
-        socket.join(documentId);
-        socket.emit("load-document", doc.data ?? '');
-
-
-      } else {
-        socket.join("notAuser");
-        socket.emit("not_a_user");
-      }
      
-      socket.on("send-changes", delta => {
-        socket.broadcast.to(documentId).emit("receive-changes", delta)
-      })
-
-      socket.on("save-document", async data => {
-        await updateDoc({ _id: documentId }, { data });
+      socket.join(editorId);
+       
+      socket.on("send-changes", ({ data, value }) => {
+        socket.broadcast.to(editorId).emit("receive-changes", { data, value })
       })
     })
   })
