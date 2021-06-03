@@ -122,11 +122,11 @@ const PORT = process.env.PORT || 3001;
   })
 
   app.post("/create/doc", extractJWT, async (req, res, next) => {
-    const { name, _id, language } = req.body;
+    const { name, _id, language, private } = req.body;
     const { username } = req.locals;
     const { found, user } = await findUser({ _id: username });
     if (found) {
-      const { saved } = await createDoc(name, _id, user._id, language.trim());
+      const { saved } = await createDoc(name, _id, user._id, language.trim(), private);
       if (saved) return res.status(200).json({ message: "New document created", success: true })
     }
   });
@@ -139,6 +139,20 @@ const PORT = process.env.PORT || 3001;
       return res.status(200).json({ message: "Deleted doc ", success: true })
     }
     res.status(200).json({ message: "Failed to delete doc ", success: false })
+  });
+
+  app.get("/public/docs", async (req, res, next) => {
+    const { foundDocs, docs } = await getAllDocsByUser({ private: false });
+    res.status(200).json({ message: docs, success: foundDocs })
+  });
+  server.listen(PORT, () => {
+    console.log("Server has started on " + PORT)
+  });
+  app.post("/update/visibility/doc", async (req, res, next) => {
+    const { docID } = req.body;
+    const { doc } = await findDoc({ _id: docID });
+    const { updated } = await updateDoc({ _id: docID }, { private: !(doc.private) })
+    res.status(200).json({ message: "Updated doc visibility.", success: updated })
   });
   server.listen(PORT, () => {
     console.log("Server has started on " + PORT)

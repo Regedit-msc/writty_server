@@ -1,13 +1,14 @@
 
 const Doc = require("../../Document");
 
-async function createDoc(name, _id, userID, lang) {
+async function createDoc(name, _id, userID, lang, private) {
 
     const doc = await Doc.create({
         name,
         _id,
         user: userID,
-        language: lang
+        language: lang,
+        private
     });
 
     if (doc) {
@@ -46,13 +47,14 @@ const findDoc = async (searchParam) => {
 
 const getAllDocsByUser = async (searchParam) => {
     try {
-        const docs = await Doc.find(searchParam).select('name user language').lean().exec()
+        const docs = await Doc.find(searchParam).populate({ path: "user", select: "username" }).select('name user language private').lean().exec()
         if (docs) return { foundDocs: true, docs };
         return { foundDocs: false };
     } catch {
         return { foundDocs: false };
     }
 }
+
 
 
 const deleteDoc = async (searchParam) => {
@@ -63,7 +65,7 @@ const deleteDoc = async (searchParam) => {
     } catch {
         return { deleted: false };
     }
-}
+};
 module.exports = {
     deleteDoc,
     getAllDocsByUser,

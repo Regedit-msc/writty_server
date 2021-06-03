@@ -11,6 +11,10 @@ const docSchema = new mongoose.Schema({
   language: {
     type: String,
     default: "javascript"
+  },
+  private: {
+    type: Boolean,
+    default: true,
   }
 })
 
