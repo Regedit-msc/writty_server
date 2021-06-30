@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const docSchema = new mongoose.Schema({
   _id: String,
   name: String,
-  data: Object,
+  data: String,
   user: {
     type: mongoose.Schema.Types.ObjectId, ref: 'user',
     required: true,
@@ -15,7 +15,9 @@ const docSchema = new mongoose.Schema({
   private: {
     type: Boolean,
     default: true,
-  }
+  },
+  publicLink: String,
+  collabLink: String,
 })
 
 const Doc = new mongoose.model('document', docSchema)
