@@ -1,4 +1,6 @@
 const mongoose = require('mongoose');
+const commentSchema = require('./Comment');
+const LikeUserSchema = require('./LikeUser');
 
 const docSchema = new mongoose.Schema({
   _id: String,
@@ -18,6 +20,8 @@ const docSchema = new mongoose.Schema({
   },
   publicLink: String,
   collabLink: String,
+  likes: [LikeUserSchema],
+  comments: [commentSchema]
 })
 
 const Doc = new mongoose.model('document', docSchema)

@@ -13,13 +13,14 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 const { signJWT, extractJWT } = require("./utils/jwt/index");
-const { getAllDocsByUser, createDoc, findDoc, updateDoc, deleteDoc } = require("./utils/doc_utils");
+const { getAllDocsByUsers, createDoc, findDoc, updateDoc, deleteDoc } = require("./utils/doc_utils");
+const { paginatedDocs } = require("./utils/paginateDocs");
 
 const PORT = process.env.PORT || 3001;
 
 
 (async () => {
-  mongoose.connect(process.env.MONGO_URI, {
+  mongoose.connect(process.env.NODE_ENV === "development" ? process.env.MONGO_URI_DEV : process.env.MONGO_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
     useFindAndModify: false,
@@ -156,13 +157,36 @@ const PORT = process.env.PORT || 3001;
 
   })
 
+  app.post("/like", extractJWT, async (req, res, next) => {
+    const { username } = req.locals;
+    const { docID } = req.body;
+    const { user } = await findUser({ _id: username });
+    const { doc } = await findDoc({ _id: docID });
+    const alreadyLiked = doc.likes.findIndex((e) => e.user === user._id);
+    if (alreadyLiked === -1) {
+      const { updated } = await updateDoc({ _id: docID }, { likes: [...doc.likes, { user: user._id }] });
+      if (updated) return res.status(200).json({ message: "Liked code.", success: true })
+    } else {
+      const { updated } = await updateDoc({ _id: docID }, { likes: [...doc.likes.filter(e => e.user === user._id)] })
+      if (updated) return res.status(200).json({ message: "Unliked code.", success: true })
+    }
 
+  })
+
+  app.post("/comment", extractJWT, async (req, res, next) => {
+    const { username } = req.locals;
+    const { docID, commentBody } = req.body;
+    const { user } = await findUser({ _id: username });
+    const { doc } = await findDoc({ _id: docID });
+    const { updated } = await updateDoc({ _id: docID }, { comments: [...doc.comments, { user: user._id, body: commentBody }] });
+    if (updated) return res.status(200).json({ message: "Commented on code.", success: true })
+  })
 
   app.get("/details", extractJWT, async (req, res, next) => {
     const { username } = req.locals;
     const { found, user } = await findUser({ _id: username });
     if (found) {
-      const { foundDocs, docs } = await getAllDocsByUser({ user: username });
+      const { foundDocs, docs } = await getAllDocsByUsers({ user: username });
       console.log(docs)
       if (foundDocs) return res.status(200).json({ message: docs, username: user.username, success: true });
     }
@@ -193,8 +217,11 @@ const PORT = process.env.PORT || 3001;
   });
 
   app.get("/public/docs", async (req, res, next) => {
-    const { foundDocs, docs } = await getAllDocsByUser({ private: false });
+    const { foundDocs, docs } = await getAllDocsByUsers({ private: false });
     res.status(200).json({ message: docs, success: foundDocs })
+  });
+  app.get("/public/docs/paginated", paginatedDocs({ private: false }), async (req, res, next) => {
+    res.status(200).json({ message: res.paginatedResults })
   });
 
   app.post("/update/visibility/doc", extractJWT, async (req, res, next) => {

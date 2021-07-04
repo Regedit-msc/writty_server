@@ -46,7 +46,7 @@ const findDoc = async (searchParam) => {
     }
 }
 
-const getAllDocsByUser = async (searchParam) => {
+const getAllDocsByUsers = async (searchParam) => {
     try {
         const docs = await Doc.find(searchParam).populate({ path: "user", select: "username" }).select('name user language private publicLink collabLink data').lean().exec()
         if (docs) return { foundDocs: true, docs };
@@ -69,7 +69,7 @@ const deleteDoc = async (searchParam) => {
 };
 module.exports = {
     deleteDoc,
-    getAllDocsByUser,
+    getAllDocsByUsers,
     findDoc,
     createDoc,
     updateDoc
