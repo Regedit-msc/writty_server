@@ -48,7 +48,7 @@ const findDoc = async (searchParam) => {
 
 const getAllDocsByUsers = async (searchParam) => {
     try {
-        const docs = await Doc.find(searchParam).populate({ path: "user", select: "username" }).select('name user language private publicLink collabLink data').lean().exec()
+        const docs = await Doc.find(searchParam).populate({ path: "user", select: "username" }).select('name user language private publicLink collabLink data').sort({ createdAt: 'desc' }).lean().exec()
         if (docs) return { foundDocs: true, docs };
         return { foundDocs: false };
     } catch {

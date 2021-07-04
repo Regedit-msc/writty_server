@@ -25,7 +25,7 @@ function paginatedDocs(searchParam) {
             }
         }
         try {
-            results.results = await Doc.find(searchParam).limit(limit).skip(startIndex).populate({ path: "user", select: "username" }).select('name user language private publicLink collabLink data').lean().exec()
+            results.results = await Doc.find(searchParam).limit(limit).skip(startIndex).populate({ path: "user", select: "username" }).select('name user language private publicLink collabLink data').sort({ createdAt: 'desc' }).lean().exec()
             res.paginatedResults = results
             next()
         } catch (e) {

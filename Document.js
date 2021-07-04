@@ -22,7 +22,7 @@ const docSchema = new mongoose.Schema({
   collabLink: String,
   likes: [LikeUserSchema],
   comments: [commentSchema]
-})
+}, { timestamps: true })
 
 const Doc = new mongoose.model('document', docSchema)
 
