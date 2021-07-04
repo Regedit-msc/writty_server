@@ -20,6 +20,7 @@ const docSchema = new mongoose.Schema({
   },
   publicLink: String,
   collabLink: String,
+  theme: String,
   likes: [LikeUserSchema],
   comments: [commentSchema]
 }, { timestamps: true })

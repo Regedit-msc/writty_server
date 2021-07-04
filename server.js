@@ -1,5 +1,4 @@
 const mongoose = require("mongoose")
-const Doc = require("./Document")
 const express = require('express');
 const http = require("http");
 const app = express();
@@ -204,6 +203,16 @@ const PORT = process.env.PORT || 3001;
       if (saved) return res.status(200).json({ message: "New document created", success: true })
     }
   });
+  app.get("/search/docs", async (req, res, next) => {
+    const { wol } = req.query;
+    const { foundDocs, docs } = await getAllDocsByUsers({ name: { $regex: (new RegExp(wol.replace(/^"(.*)"$/, '$1'))), $options: "i" }, private: false })
+    if (foundDocs) {
+      res.status(200).json({ message: docs, success: true })
+    }
+
+
+  });
+
 
   app.post("/delete/doc", extractJWT, async (req, res, next) => {
     const { docID } = req.body;
