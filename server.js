@@ -2,22 +2,28 @@ const mongoose = require("mongoose")
 const express = require('express');
 const http = require("http");
 const app = express();
+const _ = require("lodash");
 const server = http.createServer(app);
 const cors = require("cors");
 const User = require("./User");
 const ErrorHandling = require("./utils/errors/index");
-const { createUser, findUser } = require("./utils/user_utils/index");
+const { createUser, findUser, updateUser } = require("./utils/user_utils/index");
 require("dotenv").config();
 app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ limit: "50mb", extended: true, parameterLimit: 50000 }));
 const { signJWT, extractJWT } = require("./utils/jwt/index");
 const { getAllDocsByUsers, createDoc, findDoc, updateDoc, deleteDoc } = require("./utils/doc_utils");
 const { paginatedDocs } = require("./utils/paginateDocs");
+var ImageKit = require("imagekit");
+var imagekit = new ImageKit({
+  publicKey: `${process.env.PUBLIC_KEY}`,
+  privateKey: `${process.env.PRIVATE_KEY}`,
+  urlEndpoint: `${process.env.PUBLIC_URL}`
+});
+
 
 const PORT = process.env.PORT || 3001;
-
-
 (async () => {
   mongoose.connect(process.env.NODE_ENV === "development" ? process.env.MONGO_URI_DEV : process.env.MONGO_URI, {
     useNewUrlParser: true,
@@ -30,13 +36,14 @@ const PORT = process.env.PORT || 3001;
 
 
 
-
   const io = require("socket.io")(server, {
     cors: {
       origin: process.env.FE_ORIGIN,
       methods: ["GET", "POST"],
     },
   })
+
+
 
 
   io.of("/public").on("connection", socket => {
@@ -49,7 +56,7 @@ const PORT = process.env.PORT || 3001;
   })
 
   io.of("/editor1").on("connection", socket => {
-    console.log("connected to client");
+
     socket.on("join-editor", async ({ id, pubID, type }) => {
       switch (type) {
         case "normal":
@@ -97,9 +104,9 @@ const PORT = process.env.PORT || 3001;
     })
   });
   async function findCode(id) {
-    console.log(id);
+
     const { found, doc } = await findDoc({ _id: id });
-    console.log(doc.data, "doc data");
+
     if (found) return { code: doc, foundTheCode: true };
     return { code: "You cannot connect to anyone until you create an account", foundTheCode: false };
   }
@@ -143,7 +150,7 @@ const PORT = process.env.PORT || 3001;
       if (something) return res.status(200).json({ message: "Email or username already exists.", success: false });
 
       const { saved } = await createUser(username, email, password);
-      console.log(saved);
+
       if (saved) return res.status(200).json({ message: 'Created new account', success: true });
 
     } catch (error) {
@@ -158,36 +165,38 @@ const PORT = process.env.PORT || 3001;
 
   app.post("/like", extractJWT, async (req, res, next) => {
     const { username } = req.locals;
-    const { docID } = req.body;
-    const { user } = await findUser({ _id: username });
-    const { doc } = await findDoc({ _id: docID });
-    const alreadyLiked = doc.likes.findIndex((e) => e.user === user._id);
+    const { publicLink } = req.body;
+    const { doc } = await findDoc({ publicLink });
+    const alreadyLiked = doc?.likes.findIndex((e) => e.user == username);
+
+
     if (alreadyLiked === -1) {
-      const { updated } = await updateDoc({ _id: docID }, { likes: [...doc.likes, { user: user._id }] });
+      const { updated } = await updateDoc({ _id: doc._id }, { likes: [...doc.likes, { user: username }] });
       if (updated) return res.status(200).json({ message: "Liked code.", success: true })
     } else {
-      const { updated } = await updateDoc({ _id: docID }, { likes: [...doc.likes.filter(e => e.user === user._id)] })
+
+      const { updated } = await updateDoc({ _id: doc._id }, { likes: [...doc.likes.filter(e => e.user != username)] })
       if (updated) return res.status(200).json({ message: "Unliked code.", success: true })
     }
 
   })
 
-  app.post("/comment", extractJWT, async (req, res, next) => {
-    const { username } = req.locals;
-    const { docID, commentBody } = req.body;
-    const { user } = await findUser({ _id: username });
-    const { doc } = await findDoc({ _id: docID });
-    const { updated } = await updateDoc({ _id: docID }, { comments: [...doc.comments, { user: user._id, body: commentBody }] });
-    if (updated) return res.status(200).json({ message: "Commented on code.", success: true })
-  })
+  // app.post("/comment", extractJWT, async (req, res, next) => {
+  //   const { username } = req.locals;
+  //   const { docID, commentBody } = req.body;
+  //   const { user } = await findUser({ _id: username });
+  //   const { doc } = await findDoc({ _id: docID });
+  //   const { updated } = await updateDoc({ _id: docID }, { comments: [...doc.comments, { user: user._id, body: commentBody }] });
+  //   if (updated) return res.status(200).json({ message: "Commented on code.", success: true })
+  // })
 
   app.get("/details", extractJWT, async (req, res, next) => {
     const { username } = req.locals;
     const { found, user } = await findUser({ _id: username });
     if (found) {
       const { foundDocs, docs } = await getAllDocsByUsers({ user: username });
-      console.log(docs)
-      if (foundDocs) return res.status(200).json({ message: docs, username: user.username, success: true });
+
+      if (foundDocs) return res.status(200).json({ message: docs, username: user.username, success: true, image: user.profileImageUrl });
     }
     res.status(200).json({ message: "No details found", success: false });
 
@@ -199,7 +208,7 @@ const PORT = process.env.PORT || 3001;
     const { found, user } = await findUser({ _id: username });
     if (found) {
       const { saved } = await createDoc(name, _id, user._id, language.trim(), private, publicLink);
-      console.log(saved);
+
       if (saved) return res.status(200).json({ message: "New document created", success: true })
     }
   });
@@ -227,12 +236,36 @@ const PORT = process.env.PORT || 3001;
 
   app.get("/public/docs", async (req, res, next) => {
     const { foundDocs, docs } = await getAllDocsByUsers({ private: false });
-    res.status(200).json({ message: docs, success: foundDocs })
+    res.status(200).json({
+      message: _.map(docs, object => {
+        return _.omit(object, ['_id'])
+      }), success: foundDocs
+    })
   });
+  app.get("/user/name", extractJWT, async (req, res, next) => {
+    const { username } = req.locals;
+    const { user } = await findUser({ _id: username });
+    res.status(200).json({ message: _.omit(user, ["password", "email"]), success: true })
+  })
   app.get("/public/docs/paginated", paginatedDocs({ private: false }), async (req, res, next) => {
-    res.status(200).json({ message: res.paginatedResults })
+    res.status(200).json({ message: res.paginatedResults, success: true })
   });
+  app.get('/details/public', async (req, res, next) => {
+    const { name } = req.query;
+    const { found, user } = await findUser({ username: name });
+    if (!found) return res.status(200).json({ message: "User not found", success: false });
+    const { docs } = await getAllDocsByUsers({ user: user._id, private: false });
+    res.status(200).json({
+      message: {
+        image: user?.profileImageUrl,
+        code: docs,
+        name: user.name,
+        email: user.email,
+        userID: user._id
+      }, success: true
+    })
 
+  })
   app.post("/update/visibility/doc", extractJWT, async (req, res, next) => {
     const { username } = req.locals;
     const { docID } = req.body;
@@ -250,11 +283,41 @@ const PORT = process.env.PORT || 3001;
   })
 
   app.post("/delete/collab", extractJWT, async (req, res, next) => {
-    const { username } = req.locals;
     const { docID } = req.body;
-    const { doc } = await findDoc({ _id: docID, user: username });
     const { updated } = await updateDoc({ _id: docID }, { collabLink: null })
     res.status(200).json({ message: "Deleted collab link.", success: updated })
+  });
+
+  app.get("/get/comments", async (req, res, next) => {
+    const { id } = req.query;
+    const { doc } = await findDoc({ publicLink: id });
+    res.status(200).json({ message: doc?.comments, success: true })
+  })
+  app.get("/get/code", async (req, res, next) => {
+    const { id } = req.query;
+    const { found, doc } = await findDoc({ publicLink: id });
+    if (!found) return res.status(200).json({ message: "No code found", success: false })
+    res.status(200).json({ message: doc, success: true })
+  })
+  app.post("/create/comment", extractJWT, async (req, res, next) => {
+    const { username } = req.locals;
+    const { publicLink, body } = req.body;
+    const { doc } = await findDoc({ publicLink });
+    const { updated } = await updateDoc({ _id: doc._id }, { comments: [...doc.comments, { user: username, body }] });
+    res.status(200).json({ message: "Commented on some code.", success: updated })
+
+  })
+  app.post('/profile/image', extractJWT, async (req, res, next) => {
+    const { username } = req.locals
+    const { b64, type } = req.body;
+    imagekit.upload({
+      file: b64,
+      fileName: `profile_image_from_live_gists.${type}`,
+    }, async function (error, result) {
+      if (error) return console.log(error);
+      await updateUser({ _id: username }, { profileImageUrl: result.url })
+      res.status(200).json({ message: result?.url ?? '', success: true })
+    });
   })
 
   server.listen(PORT, () => {

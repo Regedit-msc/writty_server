@@ -40,7 +40,14 @@ const findDoc = async (searchParam) => {
     try {
         const doc = await Doc.findOne(
             searchParam
-        ).populate({ path: "user", select: "username" }).lean().exec();
+        ).populate([{
+            path: 'user',
+            select: "username profileImageUrl",
+
+        }, {
+            path: 'comments.user',
+            select: "username profileImageUrl",
+        }]).lean().exec();
         if (doc) return { found: true, doc };
         return { found: false };
     } catch {
@@ -50,7 +57,7 @@ const findDoc = async (searchParam) => {
 
 const getAllDocsByUsers = async (searchParam) => {
     try {
-        const docs = await Doc.find(searchParam).populate({ path: "user", select: "username" }).select('name user language private publicLink collabLink data theme').sort({ createdAt: 'desc' }).lean().exec()
+        const docs = await Doc.find(searchParam).populate({ path: "user", select: "username profileImageUrl" }).select('name user language private publicLink collabLink data theme comments createdAt likes').sort({ createdAt: 'desc' }).lean().exec()
         if (docs) return { foundDocs: true, docs };
         return { foundDocs: false };
     } catch {

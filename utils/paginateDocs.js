@@ -1,5 +1,5 @@
 const Doc = require("../Document")
-const { getAllDocsByUsers } = require("./doc_utils")
+
 
 function paginatedDocs(searchParam) {
     return async (req, res, next) => {
@@ -25,7 +25,7 @@ function paginatedDocs(searchParam) {
             }
         }
         try {
-            results.results = await Doc.find(searchParam).limit(limit).skip(startIndex).populate({ path: "user", select: "username" }).select('name user language private publicLink collabLink data theme').sort({ createdAt: 'desc' }).lean().exec()
+            results.results = await Doc.find(searchParam).limit(limit).skip(startIndex).populate({ path: "user", select: "username profileImageUrl" }).select('name user language private publicLink collabLink data theme comments likes createdAt').sort({ createdAt: 'desc' }).lean().exec()
             res.paginatedResults = results
             next()
         } catch (e) {

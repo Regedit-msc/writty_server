@@ -7,6 +7,8 @@ const commentSchema = mongoose.Schema({
     },
     body: String,
 
-});
+},
+    { timestamps: true }
+);
 
 module.exports = commentSchema;

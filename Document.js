@@ -21,8 +21,15 @@ const docSchema = new mongoose.Schema({
   publicLink: String,
   collabLink: String,
   theme: String,
-  likes: [LikeUserSchema],
-  comments: [commentSchema]
+  likes: {
+    type: [LikeUserSchema],
+    default: [],
+  },
+
+  comments: {
+    type: [commentSchema],
+    default: []
+  }
 }, { timestamps: true })
 
 const Doc = new mongoose.model('document', docSchema)

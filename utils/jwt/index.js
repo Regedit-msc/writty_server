@@ -35,7 +35,7 @@ const extractJWT = (req, res, next) => {
 
 
     jwt.verify(userToken, process.env.JWT_TOKEN_SECRET, (error, userID) => {
-        console.log(userID);
+        // console.log("jwt c", userID + userToken);
         if (error) return res.status(404).json({ Message: "Unauthorized access expired token" });
         req.locals = userID;
         req.token = userToken;
