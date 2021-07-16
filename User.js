@@ -8,7 +8,6 @@ const userSchema = new mongoose.Schema({
     token: String,
     profileImageUrl: {
         type: String,
-        default: "https://cdn3.vectorstock.com/i/thumb-large/76/57/portrait-young-bearded-man-in-eyeglasses-vector-34397657.jpg"
     }
 })
 

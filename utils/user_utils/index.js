@@ -1,6 +1,8 @@
 
 const User = require('../../User');
 const bcrypt = require("bcrypt");
+const { AvatarGenerator } = require('random-avatar-generator');
+const generator = new AvatarGenerator();
 
 async function createUser(username, email, password) {
     const rounds = await bcrypt.genSalt(10);
@@ -10,6 +12,7 @@ async function createUser(username, email, password) {
         username: username,
         email: email,
         password: passwordHash,
+        profileImageUrl: generator.generateRandomAvatar(username)
     });
 
     if (user) {
