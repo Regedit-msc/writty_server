@@ -8,6 +8,9 @@ const userSchema = new mongoose.Schema({
     token: String,
     profileImageUrl: {
         type: String,
+    },
+    sub: {
+        type: Object || String
     }
 })
 

@@ -2,6 +2,7 @@ const mongoose = require("mongoose")
 const express = require('express');
 const http = require("http");
 const app = express();
+const webPush = require("web-push");
 const _ = require("lodash");
 const server = http.createServer(app);
 const cors = require("cors");
@@ -16,12 +17,13 @@ const { signJWT, extractJWT } = require("./utils/jwt/index");
 const { getAllDocsByUsers, createDoc, findDoc, updateDoc, deleteDoc } = require("./utils/doc_utils");
 const { paginatedDocs } = require("./utils/paginateDocs");
 var ImageKit = require("imagekit");
+const { createNotification } = require("./utils/notification_utils");
 var imagekit = new ImageKit({
   publicKey: `${process.env.PUBLIC_KEY}`,
   privateKey: `${process.env.PRIVATE_KEY}`,
   urlEndpoint: `${process.env.PUBLIC_URL}`
 });
-
+webPush.setVapidDetails("mailto:efusanyaae@gmail.com", process.env.PUBLIC_VAPID_KEY, process.env.PRIVATE_VAPID_KEY)
 
 const PORT = process.env.PORT || 3001;
 (async () => {
@@ -166,13 +168,28 @@ const PORT = process.env.PORT || 3001;
   app.post("/like", extractJWT, async (req, res, next) => {
     const { username } = req.locals;
     const { publicLink } = req.body;
+    const { user } = await findUser({ _id: username })
     const { doc } = await findDoc({ publicLink });
     const alreadyLiked = doc?.likes.findIndex((e) => e.user == username);
-
+    function doCheck(id) {
+      if (doc.user._id == id) return true;
+      return false;
+    }
 
     if (alreadyLiked === -1) {
       const { updated } = await updateDoc({ _id: doc._id }, { likes: [...doc.likes, { user: username }] });
-      if (updated) return res.status(200).json({ message: "Liked code.", success: true })
+      const payload = JSON.stringify({
+        title: 'Like',
+        body: `${doCheck(username) ? "You" : user.username} reacted to your gist.`,
+        image: user.profileImageUrl,
+      })
+      webPush.sendNotification(doc.user.sub, payload)
+        .then(result => console.log(result))
+        .catch(e => console.log(e.stack))
+
+      await createNotification(doc.user._id, `${doCheck(username) ? "You" : user.username} reacted to your gist.`, username);
+      if (updated) return res.status(200).json({ message: "Liked code.", success: true });
+
     } else {
 
       const { updated } = await updateDoc({ _id: doc._id }, { likes: [...doc.likes.filter(e => e.user != username)] })
@@ -189,6 +206,14 @@ const PORT = process.env.PORT || 3001;
   //   const { updated } = await updateDoc({ _id: docID }, { comments: [...doc.comments, { user: user._id, body: commentBody }] });
   //   if (updated) return res.status(200).json({ message: "Commented on code.", success: true })
   // })
+
+
+  app.post('/notifications/subscribe', extractJWT, async (req, res) => {
+    const { username } = req.locals;
+    const subscription = req.body
+    await updateUser({ _id: username }, { sub: subscription });
+    res.status(200).json({ message: "Subscripton added", success: true })
+  });
 
   app.get("/details", extractJWT, async (req, res, next) => {
     const { username } = req.locals;
@@ -228,7 +253,7 @@ const PORT = process.env.PORT || 3001;
     const { username } = req.locals;
     const { deleted } = await deleteDoc({ _id: docID, user: username });
     if (deleted) {
-      
+
       return res.status(200).json({ message: "Deleted doc ", success: true })
     }
     res.status(200).json({ message: "Failed to delete doc ", success: false })
@@ -303,6 +328,18 @@ const PORT = process.env.PORT || 3001;
     const { username } = req.locals;
     const { publicLink, body } = req.body;
     const { doc } = await findDoc({ publicLink });
+    function doCheck(id) {
+      if (doc.user._id == id) return true;
+      return false;
+    }
+    const { user } = await findUser({ _id: username });
+    const payload = JSON.stringify({
+      title: 'Comment',
+      body: `${doCheck(username) ? "You" : user.username} commented on your gist.`,
+    })
+    webPush.sendNotification(doc.user.sub, payload)
+      .then(result => console.log(result))
+    await createNotification(doc.user._id, `${doCheck(username) ? "You" : user.username} commented on your gist.`, username);
     const { updated } = await updateDoc({ _id: doc._id }, { comments: [...doc.comments, { user: username, body }] });
     res.status(200).json({ message: "Commented on some code.", success: updated })
 

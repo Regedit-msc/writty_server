@@ -42,11 +42,11 @@ const findDoc = async (searchParam) => {
             searchParam
         ).populate([{
             path: 'user',
-            select: "username profileImageUrl",
+            select: "username profileImageUrl sub",
 
         }, {
             path: 'comments.user',
-            select: "username profileImageUrl",
+            select: "username profileImageUrl sub",
         }]).lean().exec();
         if (doc) return { found: true, doc };
         return { found: false };
