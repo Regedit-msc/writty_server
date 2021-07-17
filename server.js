@@ -7,6 +7,8 @@ const _ = require("lodash");
 const server = http.createServer(app);
 const cors = require("cors");
 const User = require("./User");
+const crypto = require('crypto');
+const moment = require('moment');
 const ErrorHandling = require("./utils/errors/index");
 const { createUser, findUser, updateUser } = require("./utils/user_utils/index");
 require("dotenv").config();
@@ -17,14 +19,18 @@ const { signJWT, extractJWT } = require("./utils/jwt/index");
 const { getAllDocsByUsers, createDoc, findDoc, updateDoc, deleteDoc } = require("./utils/doc_utils");
 const { paginatedDocs } = require("./utils/paginateDocs");
 var ImageKit = require("imagekit");
+const bcrypt = require("bcrypt");
 const { createNotification } = require("./utils/notification_utils");
+const { getUserIDFromToken } = require("./utils/token_utils");
+const { findMessages } = require("./utils/message_utils");
+const Message = require("./Message");
 var imagekit = new ImageKit({
   publicKey: `${process.env.PUBLIC_KEY}`,
   privateKey: `${process.env.PRIVATE_KEY}`,
   urlEndpoint: `${process.env.PUBLIC_URL}`
 });
 webPush.setVapidDetails("mailto:efusanyaae@gmail.com", process.env.PUBLIC_VAPID_KEY, process.env.PRIVATE_VAPID_KEY)
-
+const ONLINE_USERS = [];
 const PORT = process.env.PORT || 3001;
 (async () => {
   mongoose.connect(process.env.NODE_ENV === "development" ? process.env.MONGO_URI_DEV : process.env.MONGO_URI, {
@@ -56,6 +62,229 @@ const PORT = process.env.PORT || 3001;
       })
     })
   })
+
+  io.of('/chat').use(async (socket, next) => {
+    if (socket.handshake.auth.token) {
+      const { found, user_id } = getUserIDFromToken(socket.handshake.auth.token);
+
+      if (found) {
+        const { user: idUser } = await findUser({ _id: user_id });
+        socket.userID = user_id;
+        socket.currentUser = idUser
+        next()
+      } else {
+        next(new Error("Your session has timed out."))
+      }
+      next();
+    } else {
+      next(new Error("You are not authenticated."))
+    }
+  })
+  io.of('/chat').on('connect_error', error => {
+    // send error
+  })
+
+  io.of("/chat").on("connection", socket => {
+
+    socket.on("join-chat", async ({ name }) => {
+      const { found: foundNameUser, user: nameUser } = await findUser({ username: name });
+      if (foundNameUser) {
+        const { found, user: idUser } = await findUser({ _id: socket.userID });
+        if (found) {
+          const roomID = genRoomID(nameUser.username, idUser.username);
+          const { found: foundMessages, messages } = await findMessages({ room: roomID });
+          if (roomID) {
+            userJoin(socket.userID, idUser.name, roomID, socket.id);
+            socket.join(roomID);
+            socket.broadcast
+              .to(roomID)
+              .emit(
+                'onlineUsers', {
+                room: roomID,
+                users: getRoomUsers(roomID)
+              }
+              );
+            if (foundMessages) {
+              socket.emit("load-messages", { messages, success: true, roomID });
+            } else {
+              socket.emit("load-messages", { success: false });
+            }
+          }
+        } else {
+          /// ID user not found 
+        }
+      } else {
+        /// Name user not found
+      }
+    });
+    /// Typing event 
+    socket.on("typing", ({ roomID, username }) => {
+      socket.broadcast.to(roomID).emit('typing', `${username} is typing.`);
+    });
+    // Listen for chatMessage
+    socket.on('message', async ({ msg }) => {
+      const user = getCurrentUser(socket.id);
+      const roomUsers = getRoomUsers(user.room);
+      const notCurrentUser = roomUsers.filter(u => u.socketID !== socket.id);
+      io.to(user && user.room).emit('message', formatMessage(user && user.username, msg));
+      const { user: notUser } = await findUser({ _id: notCurrentUser.id })
+
+      if (user) {
+        await Message.create({
+          room: user.room,
+          body: msg,
+          user: user.id,
+          type: "message"
+        });
+
+        const payload = JSON.stringify({
+          title: `New message from ${user.username}`,
+          body: msg,
+          image: socket.currentUser.profileImageUrl
+        })
+
+        if (!notUser.sub) return;
+
+        webPush.sendNotification(notUser.sub, payload)
+          .then(result => console.log(result))
+          .catch(e => console.log(e.stack))
+
+      }
+
+
+    });
+    /// Listen for image 
+    socket.on('image', async (image) => {
+      const user = getCurrentUser(socket.id);
+      const roomUsers = getRoomUsers(user.room);
+      const notCurrentUser = roomUsers.filter(u => u.socketID !== socket.id);
+      const { user: notUser } = await findUser({ _id: notCurrentUser.id })
+      io.to(image.room).emit("image", image);
+      imagekit.upload({
+        file: image.b64,
+        fileName: `livegists.${image.type}`,
+      }, async function (error, result) {
+        if (error) console.log(error);
+        else {
+          await Message.create({
+            room: image.room,
+            user: image.user,
+            body: result.url,
+            type: "image",
+            format: image.type
+          });
+          const payload = JSON.stringify({
+            title: `${user.username} sent you an image.`,
+            body: `${user.username} sent you an image.`,
+            image: result.url
+          })
+
+          if (!notUser.sub) return;
+
+          webPush.sendNotification(notUser.sub, payload)
+            .then(result => console.log(result))
+            .catch(e => console.log(e.stack))
+        }
+      });
+
+    });
+    /// Voice note
+    /// When an audio file is received 
+    socket.on('audio', async (audio) => {
+      const user = getCurrentUser(socket.id);
+      const roomUsers = getRoomUsers(user.room);
+      const notCurrentUser = roomUsers.filter(u => u.socketID !== socket.id);
+      const { user: notUser } = await findUser({ _id: notCurrentUser.id })
+      io.to(audio.room).emit("audio", audio);
+      imagekit.upload({
+        file: audio.b64,
+        fileName: "audio_from_livegists.webm",
+      }, async function (error, result) {
+
+        if (error) console.log(error);
+        else {
+          await Message.create({
+            room: audio.room,
+            type: "vn",
+            user: audio.user,
+            body: result.url,
+          });
+          const payload = JSON.stringify({
+            title: `${user.username} sent you a voice note.`,
+            body: `${user.username} sent you a voice note.`,
+            image: socket.currentUser.profileImageUrl
+          })
+
+          if (!notUser.sub) return;
+
+          webPush.sendNotification(notUser.sub, payload)
+            .then(result => console.log(result))
+            .catch(e => console.log(e.stack))
+        }
+      });
+    })
+
+
+
+    socket.on('isRecording', user => {
+      /// Send audio to everyone including sender
+      socket.broadcast.to(user.room).emit("isRecording", user);
+    })
+
+    // Runs when client disconnects
+    socket.on('disconnect', () => {
+      const user = userLeave(socket.id);
+
+      if (user) {
+        io.to(user.room).emit('onlineUsers', {
+          room: user.room,
+          users: getRoomUsers(user.room)
+        });
+      }
+    });
+
+  });
+  function userLeave(id) {
+    const index = ONLINE_USERS.findIndex(user => user.id === id);
+
+    if (index !== -1) {
+      return users.splice(index, 1)[0];
+    }
+  }
+  function formatMessage(username, text) {
+    return {
+      username,
+      text,
+      time: moment().format('dddd').substring(0, 3) + " " + moment().format('h:mm a')
+    };
+  }
+
+  function getCurrentUser(id) {
+    return ONLINE_USERS.find(user => user.socketID === id);
+  }
+  function getRoomUsers(room) {
+    return ONLINE_USERS.filter(user => user.room === room);
+  }
+
+  function hashPwd(password, salt) {
+    var hashPwd = crypto.createHash('sha256').update(salt + password);
+    for (var x = 0; x < 199; x++) {
+      hashPwd = crypto.createHash('sha256').update(salt + hashPwd);
+    }
+    return hashPwd.digest('hex');
+  }
+  function userJoin(id, username, room, socketID) {
+    const user = { id, username, room, socketID };
+    ONLINE_USERS.push(user);
+    return user;
+  }
+  function genRoomID(name1, name2) {
+    const newNameArr = [name1, name2];
+    const sortedArr = newNameArr.sort();
+    const passwordHash = hashPwd(sortedArr[0] + sortedArr[1], process.env.CHAT_ROOM_SECRET);
+    return passwordHash;
+
+  }
 
   io.of("/editor1").on("connection", socket => {
 
