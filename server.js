@@ -24,6 +24,7 @@ const { createNotification } = require("./utils/notification_utils");
 const { getUserIDFromToken } = require("./utils/token_utils");
 const { findMessages } = require("./utils/message_utils");
 const Message = require("./Message");
+const Room = require("./Room");
 var imagekit = new ImageKit({
   publicKey: `${process.env.PUBLIC_KEY}`,
   privateKey: `${process.env.PRIVATE_KEY}`,
@@ -31,6 +32,8 @@ var imagekit = new ImageKit({
 });
 webPush.setVapidDetails("mailto:efusanyaae@gmail.com", process.env.PUBLIC_VAPID_KEY, process.env.PRIVATE_VAPID_KEY)
 const ONLINE_USERS = [];
+const ONLINE_PUBLIC_CODE_USERS = [];
+const ONLINE_COLLAB_USERS = []
 const PORT = process.env.PORT || 3001;
 (async () => {
   mongoose.connect(process.env.NODE_ENV === "development" ? process.env.MONGO_URI_DEV : process.env.MONGO_URI, {
@@ -95,20 +98,30 @@ const PORT = process.env.PORT || 3001;
           const { found: foundMessages, messages } = await findMessages({ room: roomID });
           if (roomID) {
             userJoin(socket.userID, idUser.name, roomID, socket.id);
-            socket.join(roomID);
-            socket.broadcast
-              .to(roomID)
-              .emit(
-                'onlineUsers', {
-                room: roomID,
-                users: getRoomUsers(roomID)
+            const roomF = await Room.find({ _id: roomID });
+            if (roomF) {
+              socket.join(roomID);
+              socket.broadcast
+                .to(roomID)
+                .emit(
+                  'onlineUsers', {
+                  room: roomID,
+                  users: getRoomUsers(roomID)
+                }
+                );
+              if (foundMessages) {
+                socket.emit("load-messages", { messages, success: true, roomID });
+              } else {
+                socket.emit("load-messages", { success: false });
               }
-              );
-            if (foundMessages) {
-              socket.emit("load-messages", { messages, success: true, roomID });
             } else {
-              socket.emit("load-messages", { success: false });
+              await Room.create({
+                roomID,
+                participants: [{ user: idUser._id }, { user: nameUser._id }]
+              })
             }
+
+
           }
         } else {
           /// ID user not found 
@@ -245,10 +258,24 @@ const PORT = process.env.PORT || 3001;
 
   });
   function userLeave(id) {
-    const index = ONLINE_USERS.findIndex(user => user.id === id);
+    const index = ONLINE_USERS.findIndex(user => user.socketID === id);
 
     if (index !== -1) {
-      return users.splice(index, 1)[0];
+      return ONLINE_USERS.splice(index, 1)[0];
+    }
+  }
+  function userLeavePub(id) {
+    const index = ONLINE_PUBLIC_CODE_USERS.findIndex(user => user.socketID === id);
+
+    if (index !== -1) {
+      return ONLINE_PUBLIC_CODE_USERS.splice(index, 1)[0];
+    }
+  }
+  function userLeaveCollab(id) {
+    const index = ONLINE_COLLAB_USERS.findIndex(user => user.socketID === id);
+
+    if (index !== -1) {
+      return ONLINE_COLLAB_USERS.splice(index, 1)[0];
     }
   }
   function formatMessage(username, text) {
@@ -266,6 +293,14 @@ const PORT = process.env.PORT || 3001;
     return ONLINE_USERS.filter(user => user.room === room);
   }
 
+  // function getPublicCodeUsers(room) {
+  //   return ONLINE_PUBLIC_CODE_USERS.filter(user => user.room === room);
+  // }
+
+  // function getCollabCodeUsers(room) {
+  //   return ONLINE_COLLAB_USERS.filter(user => user.room === room);
+  // }
+
   function hashPwd(password, salt) {
     var hashPwd = crypto.createHash('sha256').update(salt + password);
     for (var x = 0; x < 199; x++) {
@@ -276,6 +311,16 @@ const PORT = process.env.PORT || 3001;
   function userJoin(id, username, room, socketID) {
     const user = { id, username, room, socketID };
     ONLINE_USERS.push(user);
+    return user;
+  }
+  function pubCoderJoin(id, username, room, socketID) {
+    const user = { id, username, room, socketID };
+    ONLINE_PUBLIC_CODE_USERS.push(user);
+    return user;
+  }
+  function collabCoderJoin(id, username, room, socketID) {
+    const user = { id, username, room, socketID };
+    ONLINE_COLLAB_USERS.push(user);
     return user;
   }
   function genRoomID(name1, name2) {
@@ -294,7 +339,9 @@ const PORT = process.env.PORT || 3001;
           const { code: normalCode, foundTheCode: foundTheNormalCode } = await findCode(id);
           if (foundTheNormalCode) {
             socket.join(normalCode.publicLink);
+            pubCoderJoin(normalCode.user._id, 'Admin', normalCode.publicLink, socket.id)
             socket.join(normalCode?.collabLink);
+            collabCoderJoin(normalCode.user._id, "Admin", normalCode?.collabLink ?? '', socket.id)
             socket.emit("load-code", { language: normalCode.language, username: normalCode.user.username, name: normalCode.name, data: normalCode.data } ?? '');
           } else {
             socket.to(socket.id).emit("code_does_not_exist");
@@ -309,6 +356,7 @@ const PORT = process.env.PORT || 3001;
         case "public":
           const { code: publicCode, foundTheCode: foundThePublicCode } = await findCodeDoc(pubID);
           if (foundThePublicCode) {
+            pubCoderJoin('notadmin', `user${Math.random().toString().split(".")[1]}`, publicCode.publicLink, socket.id)
             socket.join(publicCode.publicLink);
             socket.emit("load-code", { language: publicCode.language, username: publicCode.user.username, name: publicCode.name, data: publicCode.data } ?? '');
           } else {
@@ -316,9 +364,12 @@ const PORT = process.env.PORT || 3001;
           }
           break;
         case "collab":
+          const userColID = Math.random().toString().split(".")[1]
           const { code: collabCode, foundTheCode: foundTheCollabCode } = await findCodeCollab(pubID);
           if (foundTheCollabCode) {
+            pubCoderJoin('notadmin', `user${userColID}`, collabCode.publicLink, socket.id)
             socket.join(collabCode.publicLink);
+            collabCoderJoin('notadmin', `user${userColID}`, collabCode.collabLink, socket.id)
             socket.join(collabCode?.collabLink);
             socket.emit("load-code", { language: collabCode.language, username: collabCode.user.username, name: collabCode.name, data: collabCode.data } ?? '');
           } else {
@@ -326,13 +377,23 @@ const PORT = process.env.PORT || 3001;
           }
           socket.on("send-changes", ({ data, value, randID }) => {
             socket.broadcast.to(collabCode.publicLink).to(collabCode.collabLink).emit("receive-changes", { data, value, sender_id: randID })
-          })
-          socket.on("save-code", async data => {
-            await updateDoc({ _id: id }, { data });
-          })
+          });
+
           break;
       }
     })
+    socket.on('disconnect', () => {
+      const user = userLeaveCollab(socket.id);
+      const sameUser = userLeavePub(socket.id);
+
+      if (user) {
+        console.log(user.username, "collab  " + user.room);
+        socket.to(user.room).emit('userLeft', user.username);
+      }
+      if (sameUser) {
+        socket.to(sameUser.room).emit('userLeft', sameUser.username);
+      }
+    });
   });
   async function findCode(id) {
 
@@ -450,7 +511,7 @@ const PORT = process.env.PORT || 3001;
     if (found) {
       const { foundDocs, docs } = await getAllDocsByUsers({ user: username });
 
-      if (foundDocs) return res.status(200).json({ message: docs, username: user.username, success: true, image: user.profileImageUrl });
+      if (foundDocs) return res.status(200).json({ message: docs, username: user.username, success: true, image: user.profileImageUrl, uid: user._id });
     }
     res.status(200).json({ message: "No details found", success: false });
 
