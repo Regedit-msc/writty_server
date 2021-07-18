@@ -30,6 +30,7 @@ var imagekit = new ImageKit({
   privateKey: `${process.env.PRIVATE_KEY}`,
   urlEndpoint: `${process.env.PUBLIC_URL}`
 });
+
 webPush.setVapidDetails("mailto:efusanyaae@gmail.com", process.env.PUBLIC_VAPID_KEY, process.env.PRIVATE_VAPID_KEY)
 const ONLINE_USERS = [];
 const ONLINE_PUBLIC_CODE_USERS = [];
@@ -475,7 +476,7 @@ const PORT = process.env.PORT || 3001;
       })
       webPush.sendNotification(doc.user.sub, payload)
         .then(result => console.log(result))
-        .catch(e => console.log(e.stack))
+        .catch(e => console.log("Push failed"))
 
       await createNotification(doc.user._id, `${doCheck(username) ? "You" : user.username} reacted to your gist.`, username);
       if (updated) return res.status(200).json({ message: "Liked code.", success: true });
