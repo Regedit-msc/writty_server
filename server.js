@@ -34,7 +34,6 @@ const ONLINE_USERS = [];
 const ONLINE_PUBLIC_CODE_USERS = [];
 const ONLINE_COLLAB_USERS = []
 const PORT = process.env.PORT || 3001;
-let noofm = 0;
 const io = require("socket.io")(server, {
   cors: {
     origin: process.env.FE_ORIGIN,
@@ -177,11 +176,8 @@ let runs = 0;
     });
     // Listen for chatMessage
     socket.on('message', async ({ msg }) => {
-      noofm += 1;
-      console.log(noofm);
-
       const user = getCurrentUser(socket.id);
-      chatIO.to(user?.room).emit('message', formatMessage(user && user.username, msg, user.id));
+      chatIO.to(user?.room).emit('message', formatMessage(user && user.username, msg, user?.id));
 
       if (user) {
         await Message.create({
@@ -190,21 +186,22 @@ let runs = 0;
           user: user.id,
           type: "message"
         });
-        const room = await Room.findOne({ roomID: user?.room });
+        const room = await Room.findOne({ roomID: user?.room }).populate("participants.user").select("profileImageUrl username")
         const participants = room?.participants;
-        const notUser = participants.filter(u => u.user !== user.id);
+        const notUser = participants.filter(u => u.user._id != user.id)[0];
         const payload = JSON.stringify({
           title: `New message from ${user.username}`,
           body: msg,
           image: socket.currentUser.profileImageUrl
         });
-        if (!notUser?.sub) return;
-        webPush.sendNotification(notUser.sub, payload)
+        if (!notUser) return;
+
+        webPush.sendNotification(notUser?.user?.sub, payload)
           .then(result => console.log(result))
           .catch(e => console.log(e.stack))
 
       }
-
+      await createNotification(notUser?.user?._id, `New message from ${user?.username}.`, user?.id);
 
     });
 
