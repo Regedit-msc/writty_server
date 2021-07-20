@@ -7,7 +7,6 @@ const _ = require("lodash");
 const server = http.createServer(app);
 const cors = require("cors");
 const User = require("./User");
-const crypto = require('crypto');
 const moment = require('moment');
 const ErrorHandling = require("./utils/errors/index");
 const { createUser, findUser, updateUser } = require("./utils/user_utils/index");
@@ -19,7 +18,6 @@ const { signJWT, extractJWT } = require("./utils/jwt/index");
 const { getAllDocsByUsers, createDoc, findDoc, updateDoc, deleteDoc } = require("./utils/doc_utils");
 const { paginatedDocs } = require("./utils/paginateDocs");
 var ImageKit = require("imagekit");
-const bcrypt = require("bcrypt");
 const { createNotification } = require("./utils/notification_utils");
 const { getUserIDFromToken } = require("./utils/token_utils");
 const { findMessages } = require("./utils/message_utils");
@@ -36,7 +34,20 @@ const ONLINE_USERS = [];
 const ONLINE_PUBLIC_CODE_USERS = [];
 const ONLINE_COLLAB_USERS = []
 const PORT = process.env.PORT || 3001;
+let noofm = 0;
+const io = require("socket.io")(server, {
+  cors: {
+    origin: process.env.FE_ORIGIN,
+    methods: ["GET", "POST"],
+  },
+})
+const editorIO = io.of("/editor1")
+const chatIO = io.of("/chat");
+const publicIO = io.of("/public")
+let runs = 0;
 (async () => {
+  runs += 1;
+  console.log(`The server code ran ${runs} time.`)
   mongoose.connect(process.env.NODE_ENV === "development" ? process.env.MONGO_URI_DEV : process.env.MONGO_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
@@ -48,17 +59,11 @@ const PORT = process.env.PORT || 3001;
 
 
 
-  const io = require("socket.io")(server, {
-    cors: {
-      origin: process.env.FE_ORIGIN,
-      methods: ["GET", "POST"],
-    },
-  })
 
 
 
-
-  io.of("/public").on("connection", socket => {
+  publicIO.on("connection", socket => {
+    console.log("public con")
     socket.on("join-editor", () => {
       socket.join("public-room");
       socket.on("send-changes", ({ data, value, randID }) => {
@@ -67,68 +72,91 @@ const PORT = process.env.PORT || 3001;
     })
   })
 
-  io.of('/chat').use(async (socket, next) => {
-    if (socket.handshake.auth.token) {
-      const { found, user_id } = getUserIDFromToken(socket.handshake.auth.token);
 
-      if (found) {
-        const { user: idUser } = await findUser({ _id: user_id });
-        socket.userID = user_id;
-        socket.currentUser = idUser
-        next()
-      } else {
-        next(new Error("Your session has timed out."))
-      }
-      next();
-    } else {
-      next(new Error("You are not authenticated."))
-    }
-  })
-  io.of('/chat').on('connect_error', error => {
+  chatIO.adapter.on("create-room", (room) => {
+    console.log(`room ${room} was created`);
+  });
+
+  chatIO.adapter.on("join-room", (room, id) => {
+    console.log(`socket ${id} has joined room ${room}`);
+  });
+  chatIO.on('connect_error', error => {
     // send error
+    console.log(error)
   })
 
-  io.of("/chat").on("connection", socket => {
-
+  chatIO.on("connection", socket => {
+    console.log("connected")
     socket.on("join-chat", async ({ name }) => {
-      const { found: foundNameUser, user: nameUser } = await findUser({ username: name });
-      if (foundNameUser) {
-        const { found, user: idUser } = await findUser({ _id: socket.userID });
-        if (found) {
-          const roomID = genRoomID(nameUser.username, idUser.username);
-          const { found: foundMessages, messages } = await findMessages({ room: roomID });
-          if (roomID) {
-            userJoin(socket.userID, idUser.name, roomID, socket.id);
-            const roomF = await Room.find({ _id: roomID });
-            if (roomF) {
-              socket.join(roomID);
-              socket.broadcast
-                .to(roomID)
-                .emit(
-                  'onlineUsers', {
-                  room: roomID,
-                  users: getRoomUsers(roomID)
+      if (socket.handshake.auth.token) {
+        getUserIDFromToken(socket.handshake.auth.token, async ({ found, user_id }) => {
+          if (found) {
+            const { found, user: idUser } = await findUser({ _id: user_id });
+            socket.userID = user_id;
+            socket.currentUser = idUser
+            const { found: foundNameUser, user: nameUser } = await findUser({ username: name });
+            if (foundNameUser) {
+              if (found) {
+                if (nameUser.username === idUser.username) return socket.emit("error_happened", "You cannot chat with yourself.")
+                let roomID = genRoomID(nameUser.username, idUser.username);
+                const roomF = await Room.findOne({ roomID: roomID });
+                const { found: foundMessages, messages } = await findMessages({ room: roomID });
+                if (roomID) {
+
+                  if (roomF) {
+                    userJoin(socket.userID, idUser.username, roomID, socket.id);
+                    socket.join(roomID);
+                    socket
+                      .emit(
+                        'onlineUsers', {
+                        room: roomID,
+                        users: getRoomUsers(roomID)
+                      }
+                      );
+                    if (foundMessages) {
+                      socket.emit("load-messages", { messages, success: true, roomID, userID: socket.userID, profileImage: nameUser.profileImageUrl, profileImageYou: idUser.profileImageUrl });
+                    } else {
+                      socket.emit("load-messages", { success: false, roomID, userID: socket.userID });
+                    }
+                  } else {
+                    console.log("here");
+                    await Room.create({
+                      roomID,
+                      participants: [{ user: idUser._id }, { user: nameUser._id }]
+                    });
+                    userJoin(socket.userID, idUser.username, roomID, socket.id);
+                    socket.join(roomID);
+                    io.to(roomID)
+                      .emit(
+                        'onlineUsers', {
+                        room: roomID,
+                        users: getRoomUsers(roomID)
+                      }
+                      );
+                    if (foundMessages) {
+                      socket.emit("load-messages", { messages, success: true, roomID, userID: socket.userID, profileImage: nameUser.profileImageUrl, profileImageYou: idUser.profileImageUrl });
+                    } else {
+                      socket.emit("load-messages", { success: false, roomID, userID: socket.userID });
+                    }
+                  }
+
+
                 }
-                );
-              if (foundMessages) {
-                socket.emit("load-messages", { messages, success: true, roomID });
               } else {
-                socket.emit("load-messages", { success: false });
+                socket.emit("error_happened", "You are not signed in.")
               }
             } else {
-              await Room.create({
-                roomID,
-                participants: [{ user: idUser._id }, { user: nameUser._id }]
-              })
+              socket.emit("error_happened", "The user you want to chat with does not exist.")
             }
 
-
+          } else {
+            socket.emit("error_happened", "Your session has expired please login.")
           }
-        } else {
-          /// ID user not found 
-        }
+        });
+
+
       } else {
-        /// Name user not found
+        socket.emit("error_happened", "You are not authenticated.")
       }
     });
     /// Typing event 
@@ -137,11 +165,11 @@ const PORT = process.env.PORT || 3001;
     });
     // Listen for chatMessage
     socket.on('message', async ({ msg }) => {
+      noofm += 1;
+      console.log(noofm);
+
       const user = getCurrentUser(socket.id);
-      const roomUsers = getRoomUsers(user.room);
-      const notCurrentUser = roomUsers.filter(u => u.socketID !== socket.id);
-      io.to(user && user.room).emit('message', formatMessage(user && user.username, msg));
-      const { user: notUser } = await findUser({ _id: notCurrentUser.id })
+      socket.emit('message', formatMessage(user && user.username, msg));
 
       if (user) {
         await Message.create({
@@ -150,15 +178,15 @@ const PORT = process.env.PORT || 3001;
           user: user.id,
           type: "message"
         });
-
+        const room = await Room.findOne({ roomID: user?.room });
+        const participants = room?.participants;
+        const notUser = participants.filter(u => u.user !== user.id);
         const payload = JSON.stringify({
           title: `New message from ${user.username}`,
           body: msg,
           image: socket.currentUser.profileImageUrl
-        })
-
-        if (!notUser.sub) return;
-
+        });
+        if (!notUser?.sub) return;
         webPush.sendNotification(notUser.sub, payload)
           .then(result => console.log(result))
           .catch(e => console.log(e.stack))
@@ -167,90 +195,13 @@ const PORT = process.env.PORT || 3001;
 
 
     });
-    /// Listen for image 
-    socket.on('image', async (image) => {
-      const user = getCurrentUser(socket.id);
-      const roomUsers = getRoomUsers(user.room);
-      const notCurrentUser = roomUsers.filter(u => u.socketID !== socket.id);
-      const { user: notUser } = await findUser({ _id: notCurrentUser.id })
-      io.to(image.room).emit("image", image);
-      imagekit.upload({
-        file: image.b64,
-        fileName: `livegists.${image.type}`,
-      }, async function (error, result) {
-        if (error) console.log(error);
-        else {
-          await Message.create({
-            room: image.room,
-            user: image.user,
-            body: result.url,
-            type: "image",
-            format: image.type
-          });
-          const payload = JSON.stringify({
-            title: `${user.username} sent you an image.`,
-            body: `${user.username} sent you an image.`,
-            image: result.url
-          })
-
-          if (!notUser.sub) return;
-
-          webPush.sendNotification(notUser.sub, payload)
-            .then(result => console.log(result))
-            .catch(e => console.log(e.stack))
-        }
-      });
-
-    });
-    /// Voice note
-    /// When an audio file is received 
-    socket.on('audio', async (audio) => {
-      const user = getCurrentUser(socket.id);
-      const roomUsers = getRoomUsers(user.room);
-      const notCurrentUser = roomUsers.filter(u => u.socketID !== socket.id);
-      const { user: notUser } = await findUser({ _id: notCurrentUser.id })
-      io.to(audio.room).emit("audio", audio);
-      imagekit.upload({
-        file: audio.b64,
-        fileName: "audio_from_livegists.webm",
-      }, async function (error, result) {
-
-        if (error) console.log(error);
-        else {
-          await Message.create({
-            room: audio.room,
-            type: "vn",
-            user: audio.user,
-            body: result.url,
-          });
-          const payload = JSON.stringify({
-            title: `${user.username} sent you a voice note.`,
-            body: `${user.username} sent you a voice note.`,
-            image: socket.currentUser.profileImageUrl
-          })
-
-          if (!notUser.sub) return;
-
-          webPush.sendNotification(notUser.sub, payload)
-            .then(result => console.log(result))
-            .catch(e => console.log(e.stack))
-        }
-      });
-    })
-
-
-
-    socket.on('isRecording', user => {
-      /// Send audio to everyone including sender
-      socket.broadcast.to(user.room).emit("isRecording", user);
-    })
 
     // Runs when client disconnects
     socket.on('disconnect', () => {
       const user = userLeave(socket.id);
 
       if (user) {
-        io.to(user.room).emit('onlineUsers', {
+        socket.to(user.room).emit('onlineUsers', {
           room: user.room,
           users: getRoomUsers(user.room)
         });
@@ -302,15 +253,10 @@ const PORT = process.env.PORT || 3001;
   //   return ONLINE_COLLAB_USERS.filter(user => user.room === room);
   // }
 
-  function hashPwd(password, salt) {
-    var hashPwd = crypto.createHash('sha256').update(salt + password);
-    for (var x = 0; x < 199; x++) {
-      hashPwd = crypto.createHash('sha256').update(salt + hashPwd);
-    }
-    return hashPwd.digest('hex');
-  }
+
   function userJoin(id, username, room, socketID) {
-    const user = { id, username, room, socketID };
+
+    const user = { id, username, room, socketID, time: new Date().toISOString() };
     ONLINE_USERS.push(user);
     return user;
   }
@@ -327,12 +273,12 @@ const PORT = process.env.PORT || 3001;
   function genRoomID(name1, name2) {
     const newNameArr = [name1, name2];
     const sortedArr = newNameArr.sort();
-    const passwordHash = hashPwd(sortedArr[0] + sortedArr[1], process.env.CHAT_ROOM_SECRET);
-    return passwordHash;
+    const roomID = sortedArr[0] + sortedArr[1] + process.env.CHAT_ROOM_SECRET
+    return roomID;
 
   }
 
-  io.of("/editor1").on("connection", socket => {
+  editorIO.on("connection", socket => {
 
     socket.on("join-editor", async ({ id, pubID, type }) => {
       switch (type) {
