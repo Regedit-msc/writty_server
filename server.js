@@ -165,6 +165,14 @@ let runs = 0;
       const user = getCurrentUser(socket.id);
       socket.broadcast.to(user?.room).emit('typing', `${user?.username} is typing.`);
     });
+    socket.on("onlineUsers", () => {
+      const user = getCurrentUser(socket.id);
+      chatIO.to(user?.room).emit('onlineUsers',
+        'onlineUsers', {
+        room: roomID,
+        users: getRoomUsers(roomID)
+      });
+    });
     // Listen for chatMessage
     socket.on('message', async ({ msg }) => {
       noofm += 1;
