@@ -169,7 +169,7 @@ let runs = 0;
       console.log(noofm);
 
       const user = getCurrentUser(socket.id);
-      chatIO.to(user?.room).emit('message', formatMessage(user && user.username, msg));
+      chatIO.to(user?.room).emit('message', formatMessage(user && user.username, msg, user.id));
 
       if (user) {
         await Message.create({
@@ -230,10 +230,11 @@ let runs = 0;
       return ONLINE_COLLAB_USERS.splice(index, 1)[0];
     }
   }
-  function formatMessage(username, text) {
+  function formatMessage(username, text, id) {
     return {
       username,
       text,
+      id,
       time: moment().format('dddd').substring(0, 3) + " " + moment().format('h:mm a')
     };
   }
