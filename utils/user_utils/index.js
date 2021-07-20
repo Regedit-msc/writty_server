@@ -34,20 +34,32 @@ const updateUser = async (searchParam, propertyToUpdate) => {
         ).lean().exec();
         if (user) return { updated: true, user };
         return { updated: false };
-    } catch {
+    } catch (e) {
+
         return { updated: false };
     }
 }
 
 
 const findUser = async (searchParam) => {
+
     try {
-        const user = await User.findOne(
-            searchParam
-        ).lean().exec();
-        if (user) return { found: true, user };
-        return { found: false };
-    } catch {
+        if (Object.keys(searchParam).includes("_id")) {
+            console.log("Has id");
+            const user = await User.findOne(
+                searchParam
+            ).cache({ key: searchParam._id })
+            if (user) return { found: true, user };
+            return { found: false };
+        } else {
+            const user = await User.findOne(
+                searchParam
+            ).lean().exec();
+            if (user) return { found: true, user };
+            return { found: false };
+        }
+    } catch (e) {
+        console.log(e);
         return { found: false };
     }
 }

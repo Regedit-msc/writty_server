@@ -57,6 +57,11 @@ const findDoc = async (searchParam) => {
 
 const getAllDocsByUsers = async (searchParam) => {
     try {
+        if (Object.keys(searchParam).includes("user")) {
+            const docs = await Doc.find(searchParam).populate({ path: "user", select: "username profileImageUrl" }).select('name user language private publicLink collabLink data theme comments createdAt likes').sort({ createdAt: 'desc' }).cache({ key: searchParam.user });
+            if (docs) return { foundDocs: true, docs };
+            return { foundDocs: false };
+        }
         const docs = await Doc.find(searchParam).populate({ path: "user", select: "username profileImageUrl" }).select('name user language private publicLink collabLink data theme comments createdAt likes').sort({ createdAt: 'desc' }).lean().exec()
         if (docs) return { foundDocs: true, docs };
         return { foundDocs: false };

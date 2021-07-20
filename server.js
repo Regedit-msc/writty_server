@@ -11,9 +11,11 @@ const moment = require('moment');
 const ErrorHandling = require("./utils/errors/index");
 const { createUser, findUser, updateUser } = require("./utils/user_utils/index");
 require("dotenv").config();
+require('./utils/cache');
 app.use(cors());
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true, parameterLimit: 50000 }));
+const cleanCache = require('./utils/cleanCache')
 const { signJWT, extractJWT } = require("./utils/jwt/index");
 const { getAllDocsByUsers, createDoc, findDoc, updateDoc, deleteDoc } = require("./utils/doc_utils");
 const { paginatedDocs } = require("./utils/paginateDocs");
@@ -412,7 +414,7 @@ let runs = 0;
 
   })
 
-  app.post("/like", extractJWT, async (req, res, next) => {
+  app.post("/like", cleanCache, extractJWT, async (req, res, next) => {
     const { username } = req.locals;
     const { publicLink } = req.body;
     const { user } = await findUser({ _id: username })
@@ -455,7 +457,7 @@ let runs = 0;
   // })
 
 
-  app.post('/notifications/subscribe', extractJWT, async (req, res) => {
+  app.post('/notifications/subscribe', cleanCache, extractJWT, async (req, res) => {
     const { username } = req.locals;
     const subscription = req.body
     await updateUser({ _id: username }, { sub: subscription });
@@ -474,7 +476,7 @@ let runs = 0;
 
   })
 
-  app.post("/create/doc", extractJWT, async (req, res, next) => {
+  app.post("/create/doc", cleanCache, extractJWT, async (req, res, next) => {
     const { name, _id, language, private, publicLink } = req.body;
     const { username } = req.locals;
     const { found, user } = await findUser({ _id: username });
@@ -495,7 +497,7 @@ let runs = 0;
   });
 
 
-  app.post("/delete/doc", extractJWT, async (req, res, next) => {
+  app.post("/delete/doc", cleanCache, extractJWT, async (req, res, next) => {
     const { docID } = req.body;
     const { username } = req.locals;
     const { deleted } = await deleteDoc({ _id: docID, user: username });
@@ -538,7 +540,7 @@ let runs = 0;
     })
 
   })
-  app.post("/update/visibility/doc", extractJWT, async (req, res, next) => {
+  app.post("/update/visibility/doc", cleanCache, extractJWT, async (req, res, next) => {
     const { username } = req.locals;
     const { docID } = req.body;
     const { doc } = await findDoc({ _id: docID, user: username });
@@ -546,7 +548,7 @@ let runs = 0;
     res.status(200).json({ message: "Updated doc visibility.", success: updated })
   });
 
-  app.post("/create/collab", extractJWT, async (req, res, next) => {
+  app.post("/create/collab", cleanCache, extractJWT, async (req, res, next) => {
     const { username } = req.locals;
     const { docID, collabLink } = req.body;
     const { doc } = await findDoc({ _id: docID, user: username });
@@ -571,7 +573,7 @@ let runs = 0;
     if (!found) return res.status(200).json({ message: "No code found", success: false })
     res.status(200).json({ message: doc, success: true })
   })
-  app.post("/create/comment", extractJWT, async (req, res, next) => {
+  app.post("/create/comment", cleanCache, extractJWT, async (req, res, next) => {
     const { username } = req.locals;
     const { publicLink, body } = req.body;
     const { doc } = await findDoc({ publicLink });
@@ -591,7 +593,7 @@ let runs = 0;
     res.status(200).json({ message: "Commented on some code.", success: updated })
 
   })
-  app.post('/profile/image', extractJWT, async (req, res, next) => {
+  app.post('/profile/image', cleanCache, extractJWT, async (req, res, next) => {
     const { username } = req.locals
     const { b64, type } = req.body;
     imagekit.upload({
