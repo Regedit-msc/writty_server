@@ -106,7 +106,7 @@ let runs = 0;
                   if (roomF) {
                     userJoin(socket.userID, idUser.username, roomID, socket.id);
                     socket.join(roomID);
-                    socket
+                    chatIO.to(roomID)
                       .emit(
                         'onlineUsers', {
                         room: roomID,
@@ -126,8 +126,7 @@ let runs = 0;
                     });
                     userJoin(socket.userID, idUser.username, roomID, socket.id);
                     socket.join(roomID);
-                    io.to(roomID)
-                      .emit(
+                    chatIO.to(roomID).emit(
                         'onlineUsers', {
                         room: roomID,
                         users: getRoomUsers(roomID)
@@ -170,7 +169,7 @@ let runs = 0;
       console.log(noofm);
 
       const user = getCurrentUser(socket.id);
-      socket.emit('message', formatMessage(user && user.username, msg));
+      chatIO.to(user?.room).emit('message', formatMessage(user && user.username, msg));
 
       if (user) {
         await Message.create({
