@@ -160,8 +160,9 @@ let runs = 0;
       }
     });
     /// Typing event 
-    socket.on("typing", ({ roomID, username }) => {
-      socket.broadcast.to(roomID).emit('typing', `${username} is typing.`);
+    socket.on("typing", () => {
+      const user = getCurrentUser(socket.id);
+      socket.broadcast.to(user?.room).emit('typing', `${user?.username} is typing.`);
     });
     // Listen for chatMessage
     socket.on('message', async ({ msg }) => {
