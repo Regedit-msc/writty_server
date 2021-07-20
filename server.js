@@ -167,11 +167,13 @@ let runs = 0;
     });
     socket.on("onlineUsers", () => {
       const user = getCurrentUser(socket.id);
-      chatIO.to(user?.room).emit('onlineUsers',
-        'onlineUsers', {
-        room: roomID,
-        users: getRoomUsers(roomID)
-      });
+      console.log(user);
+      if (user) {
+        chatIO.to(user?.room).emit('onlineUsers', {
+          room: user?.room,
+          users: getRoomUsers(user?.room)
+        });
+      }
     });
     // Listen for chatMessage
     socket.on('message', async ({ msg }) => {
