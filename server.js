@@ -113,8 +113,9 @@ let runs = 0;
                         users: getRoomUsers(roomID)
                       }
                       );
+                    console.log('ran')
                     if (foundMessages) {
-                      socket.emit("load-messages", { messages, success: true, roomID, userID: socket.userID, profileImage: nameUser.profileImageUrl, profileImageYou: idUser.profileImageUrl });
+                      socket.emit("load-messages", { messages, success: true, roomID, userID: socket.userID, profileImage: nameUser.profileImageUrl, profileImageYou: idUser.profileImageUrl, notYouID: nameUser._id });
                     } else {
                       socket.emit("load-messages", { success: false, roomID, userID: socket.userID });
                     }
@@ -126,6 +127,7 @@ let runs = 0;
                     });
                     userJoin(socket.userID, idUser.username, roomID, socket.id);
                     socket.join(roomID);
+
                     chatIO.to(roomID).emit(
                         'onlineUsers', {
                         room: roomID,
@@ -133,7 +135,7 @@ let runs = 0;
                       }
                       );
                     if (foundMessages) {
-                      socket.emit("load-messages", { messages, success: true, roomID, userID: socket.userID, profileImage: nameUser.profileImageUrl, profileImageYou: idUser.profileImageUrl });
+                      socket.emit("load-messages", { messages, success: true, roomID, userID: socket.userID, profileImage: nameUser.profileImageUrl, profileImageYou: idUser.profileImageUrl, notYouID: nameUser._id });
                     } else {
                       socket.emit("load-messages", { success: false, roomID, userID: socket.userID });
                     }
