@@ -5,7 +5,13 @@ const userSchema = new mongoose.Schema({
     email: { type: String },
     password: { type: String },
     created_at: { type: Date, default: Date.now() },
-    token: String
+    token: String,
+    profileImageUrl: {
+        type: String,
+    },
+    sub: {
+        type: Object || String
+    }
 })
 
 

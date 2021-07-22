@@ -1,12 +1,17 @@
 
 const Doc = require("../../Document");
+const generateTheme = require("../theme");
 
-async function createDoc(name, _id, userID) {
+async function createDoc(name, _id, userID, lang, private, publicLink) {
 
     const doc = await Doc.create({
         name,
         _id,
-        user: userID
+        user: userID,
+        language: lang,
+        private,
+        publicLink,
+        theme: generateTheme()
     });
 
     if (doc) {
@@ -35,7 +40,14 @@ const findDoc = async (searchParam) => {
     try {
         const doc = await Doc.findOne(
             searchParam
-        ).lean().exec();
+        ).populate([{
+            path: 'user',
+            select: "username profileImageUrl sub",
+
+        }, {
+            path: 'comments.user',
+            select: "username profileImageUrl sub",
+        }]).lean().exec();
         if (doc) return { found: true, doc };
         return { found: false };
     } catch {
@@ -43,15 +55,21 @@ const findDoc = async (searchParam) => {
     }
 }
 
-const getAllDocsByUser = async (searchParam) => {
+const getAllDocsByUsers = async (searchParam) => {
     try {
-        const docs = await Doc.find(searchParam).select('name user').lean().exec()
+        if (Object.keys(searchParam).includes("user")) {
+            const docs = await Doc.find(searchParam).populate({ path: "user", select: "username profileImageUrl" }).select('name user language private publicLink collabLink data theme comments createdAt likes').sort({ createdAt: 'desc' }).cache({ key: searchParam.user });
+            if (docs) return { foundDocs: true, docs };
+            return { foundDocs: false };
+        }
+        const docs = await Doc.find(searchParam).populate({ path: "user", select: "username profileImageUrl" }).select('name user language private publicLink collabLink data theme comments createdAt likes').sort({ createdAt: 'desc' }).lean().exec()
         if (docs) return { foundDocs: true, docs };
         return { foundDocs: false };
     } catch {
         return { foundDocs: false };
     }
 }
+
 
 
 const deleteDoc = async (searchParam) => {
@@ -62,10 +80,10 @@ const deleteDoc = async (searchParam) => {
     } catch {
         return { deleted: false };
     }
-}
+};
 module.exports = {
     deleteDoc,
-    getAllDocsByUser,
+    getAllDocsByUsers,
     findDoc,
     createDoc,
     updateDoc
