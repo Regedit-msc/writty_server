@@ -11,6 +11,7 @@ const { getUserIDFromToken } = require("./token_utils");
 const { findUser } = require("./user_utils");
 const webPush = require("./push_utils/index");
 const { findDoc, updateDoc } = require("./doc_utils");
+const { imagekit } = require("./imageKit");
 const ONLINE_USERS = [];
 const ONLINE_PUBLIC_CODE_USERS = [];
 const ONLINE_COLLAB_USERS = []
@@ -156,6 +157,7 @@ const doSockets = () => {
                 const room = await Room.findOne({ roomID: user?.room }).populate("participants.user").select("profileImageUrl username")
                 const participants = room?.participants;
                 const notUser = participants.filter(u => u.user._id != user.id)[0];
+                console.log(notUser);
                 const payload = JSON.stringify({
                     title: `New message from ${user.username}`,
                     body: msg,
@@ -166,11 +168,91 @@ const doSockets = () => {
                 webPush.sendNotification(notUser?.user?.sub, payload)
                     .then(result => console.log(result))
                     .catch(e => console.log(e.stack))
+                await createNotification(notUser?.user?._id, `New message from ${user?.username}.`, user?.id);
+
 
             }
-            await createNotification(notUser?.user?._id, `New message from ${user?.username}.`, user?.id);
 
         });
+        /// Listen for voice notes 
+        socket.on("vn", async ({ audiob64, room: roomInUse, idUserProfileImage, id, userID }) => {
+            imagekit.upload({
+                file: audiob64,
+                fileName: "audio_from_live_gists.webm",   //required
+            }, async function (error, result) {
+                console.log('ran');
+                if (error) console.log(error);
+                else {
+
+                    chatIO.to(roomInUse).emit("vn", { body: result.url, user: { profileImageUrl: idUserProfileImage, _id: userID }, type: "vn" });
+                    await Message.create({
+                        user: userID,
+                        room: roomInUse,
+                        body: result.url,
+                        format: "webm",
+                        type: "vn"
+                    });
+                }
+                const room = await Room.findOne({ roomID: roomInUse }).populate("participants.user").select("profileImageUrl username")
+                const participants = room?.participants;
+                const notUser = participants.filter(u => u.user._id != userID)[0];
+                const payload = JSON.stringify({
+                    title: `New voice message from ${socket?.currentUser?.username}`,
+                    body: 'New voice message',
+                    image: idUserProfileImage
+                });
+                if (!notUser) return;
+
+                webPush.sendNotification(notUser?.user?.sub, payload)
+                    .then(result => console.log(result))
+                    .catch(e => console.log(e.stack))
+
+
+                await createNotification(notUser?.user?._id, `New voice message from ${socket?.currentUser?.username}.`, userID
+                );
+            });
+        });
+        /// Listen for image 
+        socket.on('image', async ({ b64, type, userID, room: roomInUse, caption }) => {
+            console.log({ type, userID, room: roomInUse, caption })
+            imagekit.upload({
+                file: b64,
+                fileName: `image_from_live_gists.${type}`,
+            }, async function (error, result) {
+                if (error) console.log(error);
+                else {
+
+                    chatIO.to(roomInUse).emit("image", { body: result.url, user: { _id: userID }, type: "image", caption });
+                    await Message.create({
+                        user: userID,
+                        room: roomInUse,
+                        body: result.url,
+                        format: type,
+                        type: "image",
+                        caption
+                    });
+                    const room = await Room.findOne({ roomID: roomInUse }).populate("participants.user").select("profileImageUrl username")
+                    const participants = room?.participants;
+                    const notUser = participants.filter(u => u.user._id != userID)[0];
+                    const payload = JSON.stringify({
+                        title: `${socket?.currentUser?.username} sent you an image.`,
+                        body: caption,
+                        image: result.url
+                    });
+                    if (!notUser) return;
+
+                    webPush.sendNotification(notUser?.user?.sub, payload)
+                        .then(result => console.log(result))
+                        .catch(e => console.log(e.stack))
+
+
+                    await createNotification(notUser?.user?._id, `${socket?.currentUser?.username} sent you image.`, userID)
+
+                }
+            });
+
+        });
+
 
         // Runs when client disconnects
         socket.on('disconnect', () => {
@@ -211,7 +293,8 @@ const doSockets = () => {
             username,
             text,
             id,
-            time: moment().format('dddd').substring(0, 3) + " " + moment().format('h:mm a')
+            time: moment().format('LT'),
+            timeISO: new Date().toISOString()
         };
     }
 
