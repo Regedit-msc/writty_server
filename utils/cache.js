@@ -3,7 +3,7 @@ const redis = require("redis");
 const util = require("util");
 const client = redis
     .createClient(process.env.REDIS_PORT, process.env.REDIS_HOST)
-    .on('error', err => console.error('FUCK', err));
+    .on('error', err => console.error('Redis', err));
 client.auth(process.env.REDIS_PASS);
 client.hget = util.promisify(client.hget);
 const exec = mongoose.Query.prototype.exec;
