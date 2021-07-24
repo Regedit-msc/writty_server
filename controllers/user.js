@@ -1,12 +1,7 @@
 const { findUser } = require("../utils/user_utils");
-var ImageKit = require("imagekit");
-var imagekit = new ImageKit({
-    publicKey: `${process.env.PUBLIC_KEY}`,
-    privateKey: `${process.env.PRIVATE_KEY}`,
-    urlEndpoint: `${process.env.PUBLIC_URL}`
-});
 const _ = require("lodash");
 const { getAllDocsByUsers } = require("../utils/doc_utils");
+const { imagekit } = require("../utils/imageKit");
 const details = async (req, res, next) => {
     const { username } = req.locals;
     const { found, user } = await findUser({ _id: username });

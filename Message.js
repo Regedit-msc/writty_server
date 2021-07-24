@@ -8,7 +8,8 @@ const messageSchema = new mongoose.Schema({
     body: String,
     room: String,
     type: String,
-    format: String
+    format: String,
+    caption: String
 
 }, { timestamps: true })
 
