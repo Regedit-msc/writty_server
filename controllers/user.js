@@ -1,4 +1,4 @@
-const { findUser } = require("../utils/user_utils");
+const { findUser, updateUser } = require("../utils/user_utils");
 const _ = require("lodash");
 const { getAllDocsByUsers } = require("../utils/doc_utils");
 const { imagekit } = require("../utils/imageKit");

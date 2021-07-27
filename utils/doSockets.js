@@ -222,7 +222,7 @@ const doSockets = () => {
                 if (error) console.log(error);
                 else {
 
-                    chatIO.to(roomInUse).emit("image", { body: result.url, user: { _id: userID }, type: "image", caption });
+                    chatIO.to(roomInUse).emit("image", { body: result.url, user: { _id: userID }, type: "image", caption, format: type });
                     await Message.create({
                         user: userID,
                         room: roomInUse,

@@ -12,6 +12,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "axios": "^0.21.1",
     "bcrypt": "^5.0.1",
     "body-parser": "^1.19.0",
     "cors": "^2.8.5",
@@ -22,6 +23,9 @@
     "lodash": "^4.17.21",
     "moment": "^2.29.1",
     "mongoose": "^5.12.4",
+    "passport": "^0.4.1",
+    "passport-github-token": "^3.0.0",
+    "passport-google-token": "^0.1.2",
     "random-avatar-generator": "^2.0.0",
     "redis": "^3.1.2",
     "socket.io": "^4.1.3",
