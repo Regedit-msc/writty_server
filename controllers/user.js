@@ -2,6 +2,7 @@ const { findUser, updateUser } = require("../utils/user_utils");
 const _ = require("lodash");
 const { getAllDocsByUsers } = require("../utils/doc_utils");
 const { imagekit } = require("../utils/imageKit");
+const sharp = require('sharp');
 const details = async (req, res, next) => {
     const { username } = req.locals;
     const { found, user } = await findUser({ _id: username });
@@ -26,14 +27,27 @@ const userDetailsShort = async (req, res, next) => {
 const profileImage = async (req, res, next) => {
     const { username } = req.locals
     const { b64, type } = req.body;
-    imagekit.upload({
-        file: b64,
-        fileName: `profile_image_from_live_gists.${type}`,
-    }, async function (error, result) {
-        if (error) return console.log(error);
-        await updateUser({ _id: username }, { profileImageUrl: result.url })
-        res.status(200).json({ message: result?.url ?? '', success: true })
-    });
+    const base64Image = `data:image/${type};base64,${b64}`;
+    let parts = base64Image.split(';');
+    let imageData = parts[1].split(',')[1];
+    var img = Buffer.from(imageData, 'base64');
+    sharp(img)
+        .resize(460, 460).webp({ lossless: true }).toBuffer()
+        .then(resizedImageBuffer => {
+            let resizedImageData = resizedImageBuffer.toString('base64');
+            imagekit.upload({
+                file: resizedImageData,
+                fileName: `profile_image_from_live_gists.webp`,
+            }, async function (error, result) {
+                if (error) return console.log(error);
+                await updateUser({ _id: username }, { profileImageUrl: result.url })
+                res.status(200).json({ message: result?.url ?? '', success: true })
+            });
+        })
+        .catch(error => {
+            res.status(200).json({ message: "Error uploading image", success: false })
+        })
+
 }
 
 
