@@ -1,4 +1,4 @@
-const User = require("../User");
+const User = require("../models/User");
 const { clearHash } = require("../utils/cache");
 const ErrorHandling = require("../utils/errors");
 const { signJWT } = require("../utils/jwt");

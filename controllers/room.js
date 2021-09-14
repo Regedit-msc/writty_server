@@ -1,5 +1,5 @@
-const Message = require("../Message");
-const Room = require("../Room");
+const Message = require("../models/Message");
+const Room = require("../models/Room");
 const _ = require("lodash");
 
 const getRooms = async (req, res, next) => {

@@ -1,7 +1,7 @@
 const { pick, keys, isEqual } = require("lodash")
 const passport = require("passport")
 const { Strategy: GStrategy } = require("passport-google-token")
-const User = require("../User")
+const User = require("../models/User")
 const { findUser, updateUser } = require("../utils/user_utils");
 const GitHubTokenStrategy = require('passport-github-token');
 

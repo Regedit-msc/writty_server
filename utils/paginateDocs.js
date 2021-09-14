@@ -1,4 +1,4 @@
-const Doc = require("../Document")
+const Doc = require("../models/Document")
 
 
 function paginatedDocs(searchParam) {
