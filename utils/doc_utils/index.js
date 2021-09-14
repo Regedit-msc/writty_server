@@ -1,5 +1,5 @@
 
-const Doc = require("../../Document");
+const Doc = require("../../models/Document");
 const generateTheme = require("../theme");
 
 async function createDoc(name, _id, userID, lang, private, publicLink) {
