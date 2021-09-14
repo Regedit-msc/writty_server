@@ -1,4 +1,4 @@
-const Message = require('../../Message');
+const Message = require('../../models/Message');
 const findMessages = async (searchParam) => {
     try {
         const messages = await Message.find(

@@ -1,5 +1,5 @@
 
-const User = require('../../User');
+const User = require('../../models/User');
 const bcrypt = require("bcrypt");
 const { AvatarGenerator } = require('random-avatar-generator');
 const generator = new AvatarGenerator();

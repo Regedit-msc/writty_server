@@ -1,4 +1,5 @@
-const User = require("../User");
+const User = require("../models/User");
+const { clearHash } = require("../utils/cache");
 const ErrorHandling = require("../utils/errors");
 const { signJWT } = require("../utils/jwt");
 const { createUser } = require("../utils/user_utils");
@@ -39,5 +40,15 @@ const register = async (req, res, next) => {
         res.status(200).json({ message: newError.message, success: false })
     }
 }
+const passportLogin = (req, res, next) => {
 
-module.exports = { login, register }
+    signJWT(req.user._id, null, (err, token) => {
+        if (err) return res.status(200).json({ message: 'Could not sign token ', success: false });
+        res.status(200).json({ message: token, success: true })
+    });
+    clearHash(req.user._id);
+}
+
+
+
+module.exports = { login, register, passportLogin }

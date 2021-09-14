@@ -5,13 +5,19 @@ const userSchema = new mongoose.Schema({
     email: { type: String },
     password: { type: String },
     created_at: { type: Date, default: Date.now() },
-    token: String,
+    otp: String,
     profileImageUrl: {
         type: String,
     },
+    actalName: String,
     sub: {
         type: Object || String
-    }
+    },
+    sId: String,
+    provider: String,
+    gitHubUrl: String,
+    blog: String,
+    socialLinks: []
 })
 
 

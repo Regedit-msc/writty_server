@@ -1,4 +1,4 @@
-const Notification = require("../../Notification");
+const Notification = require("../../models/Notification");
 
 
 const findNotifications = async (searchParam) => {

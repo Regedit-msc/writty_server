@@ -1,5 +1,5 @@
-const Message = require("../Message");
-const Room = require("../Room");
+const Message = require("../models/Message");
+const Room = require("../models/Room");
 const express = require('express');
 const http = require("http");
 const app = express();
@@ -222,7 +222,7 @@ const doSockets = () => {
                 if (error) console.log(error);
                 else {
 
-                    chatIO.to(roomInUse).emit("image", { body: result.url, user: { _id: userID }, type: "image", caption });
+                    chatIO.to(roomInUse).emit("image", { body: result.url, user: { _id: userID }, type: "image", caption, format: type });
                     await Message.create({
                         user: userID,
                         room: roomInUse,
