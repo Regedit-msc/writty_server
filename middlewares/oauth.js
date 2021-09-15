@@ -4,6 +4,7 @@ const { Strategy: GStrategy } = require("passport-google-token")
 const User = require("../models/User")
 const { findUser, updateUser } = require("../utils/user_utils");
 const GitHubTokenStrategy = require('passport-github-token');
+const { clearHash } = require("../utils/cache");
 
 
 const cb = async (accessToken, refreshToken, profile, done) => {
@@ -14,7 +15,8 @@ const cb = async (accessToken, refreshToken, profile, done) => {
         email: profile.emails ? profile.emails[0].value : "no_email",
         provider: profile.provider,
         profileImageUrl: profile._json.picture,
-        sId: profile.id
+        sId: profile.id,
+        isVerified: true
     } : {
         actualName: profile._json.name,
         username: profile.username,
@@ -23,6 +25,7 @@ const cb = async (accessToken, refreshToken, profile, done) => {
         profileImageUrl: profile._json.avatar_url,
         sId: profile.id,
         gitHubUrl: profile._json.url,
+            isVerified: true
     };
     const { found, user } = await findUser({ email: pUser.email });
     if (!found) {
@@ -43,6 +46,7 @@ const cb = async (accessToken, refreshToken, profile, done) => {
     }));
     if (!isEqual(newPUser, oldPUser)) {
         const { updated, user: updatedUser } = await updateUser({ email: pUser.email }, newPUser);
+        clearHash(updatedUser._id);
         if (updated) {
             return done(null, updatedUser)
         }

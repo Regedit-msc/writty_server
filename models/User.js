@@ -17,7 +17,15 @@ const userSchema = new mongoose.Schema({
     provider: String,
     gitHubUrl: String,
     blog: String,
-    socialLinks: []
+    socialLinks: [],
+    isVerified: {
+        type: Boolean,
+        default: false
+    },
+    otp: {
+        type: Object,
+        default: null
+    }
 })
 
 

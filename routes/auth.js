@@ -1,6 +1,7 @@
-const { login, register, passportLogin } = require("../controllers/auth");
+const { login, register, passportLogin, verifyUserEmail, issueNewOTP } = require("../controllers/auth");
 const { passport } = require("../middlewares/oauth");
-const axios = require("axios")
+const axios = require("axios");
+const { extractJWT } = require("../utils/jwt");
 const router = require("express").Router();
 const getGithubToken = async (req, res, next) => {
     const code = req.body.code;
@@ -24,6 +25,8 @@ const path = "/"
 router.post("/login", login);
 router.post("/register", register);
 router.post("/login/google", passport.authenticate("google-token", { session: false }), passportLogin);
-router.post("/login/github", getGithubToken, passport.authenticate("github-token", { session: false }), passportLogin)
+router.post("/login/github", getGithubToken, passport.authenticate("github-token", { session: false }), passportLogin);
+router.post("/verify/email", extractJWT, verifyUserEmail);
+router.get("/issue/registration/otp", extractJWT, issueNewOTP);
 
 module.exports = { router, path }
