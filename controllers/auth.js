@@ -171,8 +171,8 @@ const issueVerifiedOtp = async (req, res, next) => {
 }
 
 const forgotPassword = async (req, res, next) => {
-    const { otp } = req.query;
-    const { password } = req.body;
+
+    const { password, otp } = req.body;
     const { username: userID } = req.locals;
     const { found, user } = await findUser({ _id: userID });
     if (found) {
@@ -182,7 +182,7 @@ const forgotPassword = async (req, res, next) => {
                 clearHash(userID);
                 return res.status(200).json({ message: 'Expired OTP', success: false });
             } else {
-                if (otp == user.otp.otp) {
+                if (user.otp.otp === otp) {
                     const rounds = await bcrypt.genSalt(10);
                     const passwordHash = await bcrypt.hash(password, rounds);
                     const { updated, user: updatedUser } = await updateUser({ _id: user._id }, { otp: null, password: passwordHash });
