@@ -31,9 +31,9 @@ let runs = 0;
 
 
 
-  if (process.env.NODE_ENV !== "development") {
-    job.start();
-  }
+  // if (process.env.NODE_ENV !== "development") {
+  //   job.start();
+  // }
   // console.log(process.argv);
 })()
 

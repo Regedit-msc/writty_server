@@ -18,7 +18,6 @@ const login = async (req, res, next) => {
                 if (err) return res.status(200).json({ message: 'Could not sign token ', success: false });
                 res.status(200).json({ message: token, success: true })
             });
-            clearHash(user._id);
         }
 
     } catch (error) {
@@ -46,7 +45,7 @@ const register = async (req, res, next) => {
                 }
                 const rounds = await bcrypt.genSalt(10);
                 const passwordHash = await bcrypt.hash(password, rounds);
-                const { updated, user: updatedUser } = await updateUser({ email }, { username, passwordHash, otp: otpObj });
+                const { updated, user: updatedUser } = await updateUser({ email }, { username, password: passwordHash, otp: otpObj });
                 clearHash(updatedUser._id);
                 if (updated) {
                     signJWT(updatedUser._id, null, (err, token) => {
@@ -148,8 +147,57 @@ const issueNewOTP = async (req, res, next) => {
     }
 
 }
+const issueVerifiedOtp = async (req, res, next) => {
+    const { email } = req.body;
+    if (!email) return res.status(200).json({ message: 'No email address provided.', success: false });
+    const { found, user } = await findUser({ email });
+    if (found) {
+        if (!user.isVerified || user.isVerified === false) res.status(200).json({ message: 'Only for verified users.', success: false });
+        const OTP = genOTP(6);
+        const otpObj = {
+            otp: OTP,
+            timeIssued: new Date().toISOString()
+        }
+        const { updated, user: updatedUser } = await updateUser({ _id: user._id }, { otp: otpObj });
+        clearHash(updatedUser._id)
+        if (updated) {
+            signJWT(updatedUser._id, null, (err, token) => {
+                if (err) return res.status(200).json({ message: 'Could not sign token.', success: false });
+                res.status(200).json({ message: "A otp has been sent to your email.", success: true })
+            });
+            sendRegistrationMail(user.username, email, OTP);
+        }
+    }
+}
+
+const forgotPassword = async (req, res, next) => {
+    const { otp } = req.query;
+    const { password } = req.body;
+    const { username: userID } = req.locals;
+    const { found, user } = await findUser({ _id: userID });
+    if (found) {
+        if (user.isVerified || user.isVerified === "true") {
+            if (new Date() > new Date(moment(user.otp.timeIssued).add(2, "minutes"))) {
+                await updateUser({ _id: user._id }, { otp: null });
+                clearHash(userID);
+                return res.status(200).json({ message: 'Expired OTP', success: false });
+            } else {
+                if (otp === user.otp.otp) {
+                    const rounds = await bcrypt.genSalt(10);
+                    const passwordHash = await bcrypt.hash(password, rounds);
+                    const { updated, user: updatedUser } = await updateUser({ _id: user._id }, { otp: null, password: passwordHash });
+                    clearHash(userID);
+                    if (updated) {
+                        return res.status(200).json({ message: 'Successfully reset password.', success: true });
+                    }
+                }
+            }
+
+        } else {
+            return res.status(200).json({ message: 'Not verified', success: false });
+        }
+    }
+}
 
 
-
-
-module.exports = { login, register, passportLogin, verifyUserEmail, issueNewOTP }
+module.exports = { login, register, passportLogin, verifyUserEmail, issueNewOTP, issueVerifiedOtp, forgotPassword }

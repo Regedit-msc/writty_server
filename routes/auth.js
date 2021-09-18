@@ -1,4 +1,4 @@
-const { login, register, passportLogin, verifyUserEmail, issueNewOTP } = require("../controllers/auth");
+const { login, register, passportLogin, verifyUserEmail, issueNewOTP, forgotPassword, issueVerifiedOtp } = require("../controllers/auth");
 const { passport } = require("../middlewares/oauth");
 const axios = require("axios");
 const { extractJWT } = require("../utils/jwt");
@@ -28,5 +28,7 @@ router.post("/login/google", passport.authenticate("google-token", { session: fa
 router.post("/login/github", getGithubToken, passport.authenticate("github-token", { session: false }), passportLogin);
 router.post("/verify/email", extractJWT, verifyUserEmail);
 router.get("/issue/registration/otp", extractJWT, issueNewOTP);
+router.post("/reset/password", extractJWT, forgotPassword);
+router.post("/issue/verified/otp", extractJWT, issueVerifiedOtp)
 
 module.exports = { router, path }
