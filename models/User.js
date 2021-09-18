@@ -17,7 +17,23 @@ const userSchema = new mongoose.Schema({
     provider: String,
     gitHubUrl: String,
     blog: String,
-    socialLinks: []
+    socialLinks: [],
+    isVerified: {
+        type: Boolean,
+        default: false
+    },
+    otp: {
+        type: Object,
+        default: null
+    },
+    userLanguages: [],
+    userSkills: [],
+    about: String,
+    finishedProfileUpdate: {
+        type: Boolean,
+        default: false
+    }
+
 })
 
 
@@ -60,3 +76,7 @@ userSchema.statics.register = async function (email, username) {
 const User = new mongoose.model('user', userSchema)
 
 module.exports = User;
+
+
+
+

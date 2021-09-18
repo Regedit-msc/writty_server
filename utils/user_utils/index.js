@@ -4,21 +4,28 @@ const bcrypt = require("bcrypt");
 const { AvatarGenerator } = require('random-avatar-generator');
 const generator = new AvatarGenerator();
 
-async function createUser(username, email, password) {
+async function createUser(username, email, password, otp = null) {
     const rounds = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(password, rounds);
 
-    const user = await User.create({
+    const user = await User.create(otp ? {
         username: username,
         email: email,
         password: passwordHash,
-        profileImageUrl: generator.generateRandomAvatar(username)
+        profileImageUrl: generator.generateRandomAvatar(username),
+
+    } : {
+        username: username,
+        email: email,
+        password: passwordHash,
+        profileImageUrl: generator.generateRandomAvatar(username),
+        otp: otp
     });
 
     if (user) {
-        return { saved: true };
+        return { saved: true, user };
     } else {
-        return { saved: false };
+        return { saved: false, user };
     }
 }
 
@@ -85,7 +92,18 @@ const deleteUser = async (searchParam) => {
     }
 }
 
+const getAllUsersByName = async (username, scopes) => {
+    try {
+        //TODO: optimize
+        const users = await User.find({ username }).select(scopes).lean().exec();
+        if (users) return { foundUsers: true, users };
+    } catch {
+        return { foundUsers: false };
+    }
+}
+
 module.exports = {
+    getAllUsersByName,
     updateUser,
     findUser,
     getAllUsers,

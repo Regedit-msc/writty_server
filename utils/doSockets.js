@@ -59,6 +59,9 @@ const doSockets = () => {
                 getUserIDFromToken(socket.handshake.auth.token, async ({ found, user_id }) => {
                     if (found) {
                         const { found, user: idUser } = await findUser({ _id: user_id });
+                        if (idUser.isVerified === false) {
+                            return socket.emit("error_happened", "Your account has not been verified.");
+                        }
                         socket.userID = user_id;
                         socket.currentUser = idUser
                         const { found: foundNameUser, user: nameUser } = await findUser({ username: name });
