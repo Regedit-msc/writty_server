@@ -29,6 +29,6 @@ router.post("/login/github", getGithubToken, passport.authenticate("github-token
 router.post("/verify/email", extractJWT, verifyUserEmail);
 router.get("/issue/registration/otp", extractJWT, issueNewOTP);
 router.post("/reset/password", extractJWT, forgotPassword);
-router.post("/issue/verified/otp", extractJWT, issueVerifiedOtp)
+router.post("/issue/verified/otp", issueVerifiedOtp)
 
 module.exports = { router, path }
