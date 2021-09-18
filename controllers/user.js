@@ -53,21 +53,12 @@ const profileImage = async (req, res, next) => {
 
 const searchUsers = async (req, res, next) => {
     console.log("Started");
-
-    mongodb.connection({ URI: process.env.SEARCH_DB, DB: 'search' }, {
-        useNewUrlParser: true,
-        useUnifiedTopology: true,
-    }).then(() => {
-          if (!req.locals?.username) return res.status(200).json({ message: "Not allowed", success: false })
-          const { wol } = req.query;
-          const usersFromSearchDB = await userModel.collection.find({ username: { $regex: (new RegExp(wol.replace(/^"(.*)"$/, '$1'))), $options: "i" } }).toArray();
-          if (usersFromSearchDB) {
-              res.status(200).json({ message: usersFromSearchDB, success: true })
-          }
-      }).then(() => {
-          userModel.close;
-      })
-
+    if (!req.locals?.username) return res.status(200).json({ message: "Not allowed", success: false })
+    const { wol } = req.query;
+    const usersFromSearchDB = await userModel.collection.find({ username: { $regex: (new RegExp(wol.replace(/^"(.*)"$/, '$1'))), $options: "i" } }).toArray();
+    if (usersFromSearchDB) {
+        res.status(200).json({ message: usersFromSearchDB, success: true })
+    }
 }
 const onboardUser = async (req, res, next) => {
     if (!req.locals?.username) return res.status(200).json({ message: "Not allowed", success: false });

@@ -21,9 +21,7 @@ let runs = 0;
     useFindAndModify: false,
     useCreateIndex: true,
   }).then(() => {
-    if (process.env.NODE_ENV === "development") {
-      todo();
-    }
+    todo();
     console.log("Connected to main db");
   }).catch((e) => console.log(e.message));
   doSockets();
