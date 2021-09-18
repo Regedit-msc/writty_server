@@ -190,6 +190,9 @@ const forgotPassword = async (req, res, next) => {
                     if (updated) {
                         return res.status(200).json({ message: 'Successfully reset password.', success: true });
                     }
+                    return res.status(200).json({ message: 'Failed.', success: false });
+                } else {
+                    return res.status(200).json({ message: 'Otp incorrect.', success: false });
                 }
             }
 
