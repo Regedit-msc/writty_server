@@ -22,9 +22,6 @@ class MongoModel extends MongoDB {
     get collection() {
         return MongoModel.db.collection(this.collectionName)
     }
-    set close() {
-        MongoModel.db.close();
-    }
 }
 
 

@@ -16,7 +16,7 @@ async function todo() {
             }
         })
             .then(() => {
-                userModel.close;
+
                 console.log("Done updating users");
             })
             .catch((e) => {
