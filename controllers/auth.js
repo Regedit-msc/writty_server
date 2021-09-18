@@ -182,7 +182,7 @@ const forgotPassword = async (req, res, next) => {
                 clearHash(userID);
                 return res.status(200).json({ message: 'Expired OTP', success: false });
             } else {
-                if (otp === user.otp.otp) {
+                if (otp == user.otp.otp) {
                     const rounds = await bcrypt.genSalt(10);
                     const passwordHash = await bcrypt.hash(password, rounds);
                     const { updated, user: updatedUser } = await updateUser({ _id: user._id }, { otp: null, password: passwordHash });
