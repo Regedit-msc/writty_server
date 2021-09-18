@@ -3,7 +3,7 @@ class MongoDB {
     async connection(connection, options = {}) {
         try {
             const client = await MongoClient.connect(connection.URI, options);
-            const db = await client.db(connection.DB);
+            const db = client.db(connection.DB);
             MongoDB.db = db;
             MongoDB.client = client;
             console.log("Connected to search db");
@@ -12,9 +12,6 @@ class MongoDB {
         }
     }
 }
-
-MongoDB.db = {};
-MongoDB.client = {};
 
 class MongoModel extends MongoDB {
     constructor(collectionName) {
