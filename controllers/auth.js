@@ -192,6 +192,7 @@ const forgotPassword = async (req, res, next) => {
                     }
                     return res.status(200).json({ message: 'Failed.', success: false });
                 } else {
+                    console.log("userotp", user.otp.otp)
                     return res.status(200).json({ message: 'Otp incorrect.', success: false });
                 }
             }
