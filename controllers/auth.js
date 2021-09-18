@@ -39,7 +39,7 @@ const register = async (req, res, next) => {
                 // Is already a verified user.
                 if (user.isVerified || user.isVerified === "true") return res.status(200).json({ message: "Email already exists.", success: false });
                 // Has already registered but isn't verified
-                const OTP = genOTP(9);
+                const OTP = genOTP(6);
                 const otpObj = {
                     otp: OTP,
                     timeIssued: new Date().toISOString()
