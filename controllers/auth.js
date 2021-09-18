@@ -163,7 +163,7 @@ const issueVerifiedOtp = async (req, res, next) => {
         if (updated) {
             signJWT(updatedUser._id, null, (err, token) => {
                 if (err) return res.status(200).json({ message: 'Could not sign token.', success: false });
-                res.status(200).json({ message: "A otp has been sent to your email.", success: true })
+                res.status(200).json({ message: token, extra: "An otp has been sent to your email address.", success: true })
             });
             sendRegistrationMail(user.username, email, OTP);
         }
