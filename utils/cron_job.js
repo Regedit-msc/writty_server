@@ -14,10 +14,15 @@ async function todo() {
             for (const user of users) {
                 await userModel.collection.replaceOne({ _id: user._id }, { _id: user._id, email: user.email, profileImageUrl: user.profileImageUrl, username: user.username }, { upsert: true });
             }
-        }).catch((e) => {
+        })
+            .then(() => {
+                userModel.close;
+                console.log("Done updating users");
+            })
+            .catch((e) => {
             console.log(e);
         });
-        console.log("Done updating users");
+
     });
 
 
