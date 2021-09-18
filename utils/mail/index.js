@@ -23,7 +23,7 @@ module.exports = {
             from: `${NAMES[getRandomIntInclusive(0, NAMES.length - 1)]} <${process.env.MAIL_ADDRESS}>`,
             to: emailAddress,
             subject: "VERIFY YOUR ACCOUNT",
-            html: `<h3> Hi there ${userName}😁. This is your otp ${otp} . It expires in one minute.</h3>`
+            html: `<code> Hi there ${userName}😁. This is your otp ${otp} . It expires in (2) minutes.</code>`
         }).then(console.info).catch(console.error);
     }
 }

@@ -5,6 +5,7 @@ const ErrorHandling = require("../utils/errors");
 const { signJWT } = require("../utils/jwt");
 const { sendRegistrationMail } = require("../utils/mail");
 const genOTP = require("../utils/otp");
+const bcrypt = require("bcrypt");
 const { createUser, findUser, updateUser } = require("../utils/user_utils");
 
 const login = async (req, res, next) => {
@@ -36,14 +37,16 @@ const register = async (req, res, next) => {
             const { user, found } = await findUser({ email });
             if (found) {
                 // Is already a verified user.
-                if (user.isVerified) return res.status(200).json({ message: "Email already exists.", success: false });
+                if (user.isVerified || user.isVerified === "true") return res.status(200).json({ message: "Email already exists.", success: false });
                 // Has already registered but isn't verified
                 const OTP = genOTP(9);
                 const otpObj = {
                     otp: OTP,
                     timeIssued: new Date().toISOString()
                 }
-                const { updated, user: updatedUser } = await updateUser({ email }, { username, password, otp: otpObj });
+                const rounds = await bcrypt.genSalt(10);
+                const passwordHash = await bcrypt.hash(password, rounds);
+                const { updated, user: updatedUser } = await updateUser({ email }, { username, passwordHash, otp: otpObj });
                 clearHash(updatedUser._id);
                 if (updated) {
                     signJWT(updatedUser._id, null, (err, token) => {
@@ -55,8 +58,8 @@ const register = async (req, res, next) => {
 
             } else {
                 const { user: usernameUser, found: foundUser } = await findUser({ username });
-                if (foundUser && usernameUser.isVerified) return res.status(200).json({ message: "Username is in use.", success: false });
-                const OTP = genOTP(9);
+                if (foundUser && usernameUser?.isVerified === true || usernameUser?.isVerified === "true") return res.status(200).json({ message: "Username is in use.", success: false });
+                const OTP = genOTP(6);
                 const otpObj = {
                     otp: OTP,
                     timeIssued: new Date().toISOString()
@@ -103,7 +106,7 @@ const verifyUserEmail = async (req, res, next) => {
     const { found, user } = await findUser({ _id: userID });
     if (found) {
         if (user.otp === null) return res.status(200).json({ message: 'Invalid OTP', success: false });
-        if (new Date() > new Date(moment(user.otp.timeIssued).add(5, "minutes"))) {
+        if (new Date() > new Date(moment(user.otp.timeIssued).add(2, "minutes"))) {
 
             await updateUser({ _id: userID }, { otp: null });
             clearHash(userID);
@@ -124,10 +127,10 @@ const issueNewOTP = async (req, res, next) => {
     const { username: userID } = req.locals;
     const { found, user } = await findUser({ _id: userID });
     if (found) {
-        if (user.isVerified) {
+        if (user.isVerified || user.isVerified === "true") {
             return res.status(200).json({ message: 'Account already verified.', success: false });
         } else {
-            const OTP = genOTP(9);
+            const OTP = genOTP(6);
             const otpObj = {
                 otp: OTP,
                 timeIssued: new Date().toISOString()

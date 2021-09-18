@@ -25,7 +25,15 @@ const userSchema = new mongoose.Schema({
     otp: {
         type: Object,
         default: null
+    },
+    userLanguages: [],
+    userSkills: [],
+    about: String,
+    finishedProfileUpdate: {
+        type: Boolean,
+        default: false
     }
+
 })
 
 
@@ -68,3 +76,7 @@ userSchema.statics.register = async function (email, username) {
 const User = new mongoose.model('user', userSchema)
 
 module.exports = User;
+
+
+
+

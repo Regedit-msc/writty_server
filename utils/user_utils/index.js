@@ -92,7 +92,18 @@ const deleteUser = async (searchParam) => {
     }
 }
 
+const getAllUsersByName = async (username, scopes) => {
+    try {
+        //TODO: optimize
+        const users = await User.find({ username }).select(scopes).lean().exec();
+        if (users) return { foundUsers: true, users };
+    } catch {
+        return { foundUsers: false };
+    }
+}
+
 module.exports = {
+    getAllUsersByName,
     updateUser,
     findUser,
     getAllUsers,

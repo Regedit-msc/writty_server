@@ -54,8 +54,6 @@ const searchDocs = async (req, res, next) => {
     if (foundDocs) {
         res.status(200).json({ message: docs, success: true })
     }
-
-
 }
 
 const deleteDocument = async (req, res, next) => {
