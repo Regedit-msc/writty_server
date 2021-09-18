@@ -45,7 +45,7 @@ const cb = async (accessToken, refreshToken, profile, done) => {
         sId: null
     }));
     if (!isEqual(newPUser, oldPUser)) {
-        const { updated, user: updatedUser } = await updateUser({ email: pUser.email }, newPUser);
+        const { updated, user: updatedUser } = await updateUser({ email: pUser.email }, { isVerified: true, ...newPUser });
         clearHash(updatedUser._id);
         if (updated) {
             return done(null, updatedUser)
