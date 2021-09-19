@@ -9,5 +9,5 @@ router.get("/details", extractJWT, isUserVerified, details);
 router.get("/user/name", extractJWT, isUserVerified, userDetailsShort);
 router.post('/profile/image', cleanCache, extractJWT, isUserVerified, profileImage);
 router.get("/search/users", extractJWT, isUserVerified, searchUsers);
-router.post("/onboard/user", extractJWT, onboardUser);
+router.post("/onboard/user", cleanCache, extractJWT, onboardUser);
 module.exports = { router, path }

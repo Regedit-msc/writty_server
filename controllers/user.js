@@ -4,6 +4,7 @@ const { getAllDocsByUsers } = require("../utils/doc_utils");
 const { imagekit } = require("../utils/imageKit");
 const sharp = require('sharp');
 const { userModel } = require("../utils/cron_job");
+const { clearHash } = require("../utils/cache");
 const details = async (req, res, next) => {
     const { username } = req.locals;
     const { found, user } = await findUser({ _id: username });
@@ -41,7 +42,7 @@ const profileImage = async (req, res, next) => {
                 fileName: `profile_image_from_live_gists.webp`,
             }, async function (error, result) {
                 if (error) return console.log(error);
-                await updateUser({ _id: username }, { profileImageUrl: result.url })
+                await updateUser({ _id: username }, { profileImageUrl: result.url });
                 res.status(200).json({ message: result?.url ?? '', success: true })
             });
         })
@@ -80,9 +81,11 @@ const onboardUser = async (req, res, next) => {
                     isVerified: true, userLanguages: details.userLanguages,
                     userSkills: details.userSkills,
                     about: details.about,
-                    profileImageUrl: result?.url,
+                    profileImageUrl: result.url,
                     finishedProfileUpdate: true,
-                })
+                    experience: details.experienceAndWorks
+                });
+                clearHash(req.locals.username);
                 res.status(200).json({ message: 'Successfully finished profile update', success: true })
             });
         })

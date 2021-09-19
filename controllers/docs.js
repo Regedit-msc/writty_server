@@ -9,6 +9,10 @@ const paginatedPub = async (req, res, next) => {
     res.status(200).json({ message: res.paginatedResults, success: true })
 
 }
+
+
+
+
 const detailsPublic = async (req, res, next) => {
     const { name } = req.query;
     const { found, user } = await findUser({ username: name });
@@ -16,7 +20,11 @@ const detailsPublic = async (req, res, next) => {
     const { docs } = await getAllDocsByUsers({ user: user._id, private: false });
     res.status(200).json({
         message: {
-            image: user?.profileImageUrl,
+            experience: user?.experience ?? [],
+            languages: user?.userLanguages ?? [],
+            skills: user?.userSkills ?? [],
+            about: user?.about ?? '',
+            image: user?.profileImageUrl ?? '',
             code: docs,
             name: user.name,
             email: user.email,

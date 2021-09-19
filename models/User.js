@@ -32,8 +32,8 @@ const userSchema = new mongoose.Schema({
     finishedProfileUpdate: {
         type: Boolean,
         default: false
-    }
-
+    },
+    experience: []
 })
 
 
