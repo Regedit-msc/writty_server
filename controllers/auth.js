@@ -112,6 +112,7 @@ const verifyUserEmail = async (req, res, next) => {
             return res.status(200).json({ message: 'Expired OTP', success: false });
         } else {
             if (user.otp.otp === otp) {
+                console.log(user.otp.otp)
                 await updateUser({ _id: userID }, { isVerified: true, otp: null });
                 clearHash(userID);
                 return res.status(200).json({ message: 'Account verification success.', success: true });
