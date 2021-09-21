@@ -20,7 +20,7 @@ class MongoModel extends MongoDB {
     }
 
     get collection() {
-        return MongoModel.db.collection(this.collectionName)
+        return MongoModel?.db?.collection(this.collectionName)
     }
 }
 

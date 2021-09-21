@@ -44,11 +44,11 @@ const pubDocs = async (req, res, next) => {
 }
 
 const createDocument = async (req, res, next) => {
-    const { name, _id, language, private, publicLink } = req.body;
+    const { name, _id, language, private, publicLink, data } = req.body;
     const { username } = req.locals;
     const { found, user } = await findUser({ _id: username });
     if (found) {
-        const { saved } = await createDoc(name, _id, user._id, language.trim(), private, publicLink);
+        const { saved } = await createDoc(name, _id, user._id, language.trim(), private, publicLink, data);
 
         if (saved) return res.status(200).json({ message: "New document created", success: true })
     }

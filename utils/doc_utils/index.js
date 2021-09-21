@@ -2,7 +2,7 @@
 const Doc = require("../../models/Document");
 const generateTheme = require("../theme");
 
-async function createDoc(name, _id, userID, lang, private, publicLink) {
+async function createDoc(name, _id, userID, lang, private, publicLink, data = '') {
 
     const doc = await Doc.create({
         name,
@@ -11,7 +11,8 @@ async function createDoc(name, _id, userID, lang, private, publicLink) {
         language: lang,
         private,
         publicLink,
-        theme: generateTheme()
+        theme: generateTheme(),
+        data
     });
 
     if (doc) {

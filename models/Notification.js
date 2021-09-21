@@ -9,6 +9,10 @@ const notificationSchema = new mongoose.Schema({
     from: {
         type: mongoose.Schema.Types.ObjectId, ref: 'user',
     },
+    isOpened: {
+        type: Boolean,
+        default: false
+    }
 }, { timestamps: true })
 
 const Notification = new mongoose.model('notification', notificationSchema)
