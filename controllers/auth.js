@@ -17,7 +17,7 @@ const login = async (req, res, next) => {
 
             signJWT(user._id, null, (err, token) => {
                 if (err) return res.status(200).json({ message: 'Could not sign token ', success: false });
-                res.status(200).json({ message: token,profileStatus:user?.finishedProfileUpdate ?? false, success: true })
+                res.status(200).json({ message: token, profileStatus:user?.finishedProfileUpdate ?? false, success: true })
             });
         }
 
