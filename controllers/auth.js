@@ -94,7 +94,7 @@ const passportLogin = (req, res, next) => {
 
     signJWT(req.user._id, null, (err, token) => {
         if (err) return res.status(200).json({ message: 'Could not sign token ', success: false });
-        res.status(200).json({ message: token, success: true })
+        res.status(200).json({ message: token,  profileStatus: req.user?.finishedProfileUpdate ?? false, success: true })
     });
     clearHash(req.user._id);
 }
