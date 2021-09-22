@@ -14,9 +14,10 @@ const login = async (req, res, next) => {
         const user = await User.login(username, password);
         if (user) {
             if (user.isVerified === false) return res.status(200).json({ message: "Account not verified. Please attemt to re-register", success: false });
+
             signJWT(user._id, null, (err, token) => {
                 if (err) return res.status(200).json({ message: 'Could not sign token ', success: false });
-                res.status(200).json({ message: token, success: true })
+                res.status(200).json({ message: token,profileStatus:user?.finishedProfileUpdate ?? false, success: true })
             });
         }
 
