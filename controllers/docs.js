@@ -110,25 +110,58 @@ const getCode = async (req, res, next) => {
 }
 
 
+const getCodeWithName = async (req, res, next) => {
+  const { name } = req.query;
+  const { found, doc } = await findDoc({ name });
+  if (!found)
+    return res.status(200).json({ message: "No code found", success: false });
+  res.status(200).json({ message: doc, success: true });
+};
+
 const createComment = async (req, res, next) => {
-    const { username } = req.locals;
-    const { publicLink, body } = req.body;
-    const { doc } = await findDoc({ publicLink });
-    function doCheck(id) {
-        if (doc.user._id == id) return true;
-        return false;
-    }
-    const { user } = await findUser({ _id: username });
-    const payload = JSON.stringify({
-        title: 'Comment',
-        body: `${doCheck(username) ? "You" : user.username} commented on your gist.`,
-    })
-    webPush.sendNotification(doc.user.sub, payload)
-        .then(result => console.log(result))
-    await createNotification(doc.user._id, `${doCheck(username) ? "You" : user.username} commented on your gist.`, username);
-    const { updated } = await updateDoc({ _id: doc._id }, { comments: [...doc.comments, { user: username, body }] });
-    res.status(200).json({ message: "Commented on some code.", success: updated })
+  const { username } = req.locals;
+  const { publicLink, body } = req.body;
+  const { doc } = await findDoc({ publicLink });
+  function doCheck(id) {
+    if (doc.user._id == id) return true;
+    return false;
+  }
+  const { user } = await findUser({ _id: username });
+  const payload = JSON.stringify({
+    title: "Comment",
+    body: `${
+      doCheck(username) ? "You" : user.username
+    } commented on your gist.`,
+  });
+  webPush
+    .sendNotification(doc.user.sub, payload)
+    .then((result) => console.log(result));
+  await createNotification(
+    doc.user._id,
+    `${doCheck(username) ? "You" : user.username} commented on your gist.`,
+    username
+  );
+  const { updated } = await updateDoc(
+    { _id: doc._id },
+    { comments: [...doc.comments, { user: username, body }] }
+  );
+  res
+    .status(200)
+    .json({ message: "Commented on some code.", success: updated });
+};
 
-}
-
-module.exports = { detailsPublic, paginatedPub, pubDocs, createDocument, searchDocs, deleteDocument, updateVisibility, createCollab, deleteCollab, getComments, getCode, createComment }
+module.exports = {
+  detailsPublic,
+  paginatedPub,
+  pubDocs,
+  createDocument,
+  searchDocs,
+  deleteDocument,
+  updateVisibility,
+  createCollab,
+  deleteCollab,
+  getComments,
+  getCode,
+  createComment,
+  getCodeWithName,
+};
