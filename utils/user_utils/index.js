@@ -71,15 +71,18 @@ const findUser = async (searchParam) => {
     }
 }
 
-const getAllUsers = async () => {
-    try {
-        const users = await User.find({}).select('name email registrationMonth').lean().exec()
-        if (users) return { foundUsers: true, users };
-        return { foundUsers: false };
-    } catch {
-        return { foundUsers: false };
-    }
-}
+const getAllUsers = async (searchParam = {}) => {
+  try {
+    const users = await User.find(searchParam)
+      .select("username email  profileImageUrl about userSkills")
+      .lean()
+      .exec();
+    if (users) return { foundUsers: true, users };
+    return { foundUsers: false };
+  } catch {
+    return { foundUsers: false };
+  }
+};
 
 
 const deleteUser = async (searchParam) => {

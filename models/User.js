@@ -1,40 +1,48 @@
 const mongoose = require('mongoose');
 const bcrypt = require("bcrypt");
+const followSchema = new mongoose.Schema({
+  user: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "user",
+  },
+});
 const userSchema = new mongoose.Schema({
-    username: { type: String },
-    email: { type: String },
-    password: { type: String },
-    created_at: { type: Date, default: Date.now() },
-    otp: String,
-    profileImageUrl: {
-        type: String,
-    },
-    actalName: String,
-    sub: {
-        type: Object || String
-    },
-    sId: String,
-    provider: String,
-    gitHubUrl: String,
-    blog: String,
-    socialLinks: [],
-    isVerified: {
-        type: Boolean,
-        default: false
-    },
-    otp: {
-        type: Object,
-        default: null
-    },
-    userLanguages: [],
-    userSkills: [],
-    about: String,
-    finishedProfileUpdate: {
-        type: Boolean,
-        default: false
-    },
-    experience: []
-})
+  username: { type: String },
+  email: { type: String },
+  password: { type: String },
+  created_at: { type: Date, default: Date.now() },
+  otp: String,
+  profileImageUrl: {
+    type: String,
+  },
+  actalName: String,
+  sub: {
+    type: Object || String,
+  },
+  sId: String,
+  provider: String,
+  gitHubUrl: String,
+  blog: String,
+  socialLinks: [],
+  isVerified: {
+    type: Boolean,
+    default: false,
+  },
+  otp: {
+    type: Object,
+    default: null,
+  },
+  userLanguages: [],
+  userSkills: [],
+  about: String,
+  finishedProfileUpdate: {
+    type: Boolean,
+    default: false,
+  },
+  experience: [],
+  badges: [],
+  followers: [followSchema],
+});
 
 
 userSchema.statics.login = async function (username, password) {

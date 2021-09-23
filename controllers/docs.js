@@ -1,38 +1,38 @@
 
 const { getAllDocsByUsers, createDoc, deleteDoc, updateDoc, findDoc } = require("../utils/doc_utils");
-const { findUser } = require("../utils/user_utils");
+const { findUser, getAllUsers } = require("../utils/user_utils");
 const webPush = require("../utils/push_utils/index");
-const _ = require("lodash")
+const _ = require("lodash");
 const { createNotification } = require("../utils/notification_utils");
 
 const paginatedPub = async (req, res, next) => {
-    res.status(200).json({ message: res.paginatedResults, success: true })
-
-}
-
-
-
+  res.status(200).json({ message: res.paginatedResults, success: true });
+};
 
 const detailsPublic = async (req, res, next) => {
-    const { name } = req.query;
-    const { found, user } = await findUser({ username: name });
-    if (!found) return res.status(200).json({ message: "User not found", success: false });
-    const { docs } = await getAllDocsByUsers({ user: user._id, private: false });
-    res.status(200).json({
-        message: {
-            experience: user?.experience ?? [],
-            languages: user?.userLanguages ?? [],
-            skills: user?.userSkills ?? [],
-            about: user?.about ?? '',
-            image: user?.profileImageUrl ?? '',
-            code: docs,
-            name: user.name,
-            email: user.email,
-            userID: user._id
-        }, success: true
-    })
-
-}
+  const { name } = req.query;
+  const { found, user } = await findUser({ username: name });
+  const { users } = await getAllUsers({ "followers.user": user._id });
+  if (!found)
+    return res.status(200).json({ message: "User not found", success: false });
+  const { docs } = await getAllDocsByUsers({ user: user._id, private: false });
+  res.status(200).json({
+    message: {
+      following: users ?? [],
+      followers: user?.followers ?? [],
+      experience: user?.experience ?? [],
+      languages: user?.userLanguages ?? [],
+      skills: user?.userSkills ?? [],
+      about: user?.about ?? "",
+      image: user?.profileImageUrl ?? "",
+      code: docs,
+      name: user.name,
+      email: user.email,
+      userID: user._id,
+    },
+    success: true,
+  });
+};
 
 const pubDocs = async (req, res, next) => {
     const { foundDocs, docs } = await getAllDocsByUsers({ private: false });
