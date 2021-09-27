@@ -1,4 +1,8 @@
-const { findUser, updateUser, getAllUsersByName } = require("../utils/user_utils");
+const {
+  findUser,
+  updateUser,
+  getAllUsersByName,
+} = require("../utils/user_utils");
 const _ = require("lodash");
 const { getAllDocsByUsers } = require("../utils/doc_utils");
 const { imagekit } = require("../utils/imageKit");
@@ -7,6 +11,8 @@ const webPush = require("../utils/push_utils/index");
 const sharp = require("sharp");
 const { userModel } = require("../utils/cron_job");
 const { clearHash } = require("../utils/cache");
+const Feed = require("../models/Feed");
+const Activity = require("../models/Activity");
 const details = async (req, res, next) => {
   const { username } = req.locals;
   const { found, user } = await findUser({ _id: username });
@@ -134,7 +140,6 @@ const onboardUser = async (req, res, next) => {
 const follow = async (req, res, next) => {
   const { username: userId } = req.locals;
   const { followId } = req.body;
-  /// TODO: create and add to activity model.
   const { found: followUserFound, user: followUser } = await findUser({
     _id: userId,
   });
@@ -166,6 +171,20 @@ const follow = async (req, res, next) => {
       `${`${followUser.username} followed you.`}`,
       userId
     );
+    const newFeedItems = userFollowers.map((follower) => {
+      clearHash(follower.user);
+      return {
+        user: follower.user,
+        type: "follow",
+        followedId: user._id,
+      };
+    });
+    await Feed.insertMany(newFeedItems);
+    await Activity.create({
+      user: userId, // Your id
+      type: "follow",
+      followedId: user._id,
+    });
     if (updated)
       return res.status(200).json({ message: "Followed.", success: true });
   } else {
