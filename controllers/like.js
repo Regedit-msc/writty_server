@@ -9,6 +9,7 @@ const like = async (req, res, next) => {
   const { publicLink } = req.body;
   const { user } = await findUser({ _id: username });
   const { doc } = await findDoc({ publicLink });
+  const userFollowers = user?.followers;
   const alreadyLiked = doc?.likes.findIndex((e) => e.user == username);
   function doCheck(id) {
     if (doc.user._id == id) return true;
@@ -42,9 +43,19 @@ const like = async (req, res, next) => {
       return {
         user: follower.user, // Your follower
         type: "likeddoc",
-        docId: doc._id,
+        whoLikedId: username, // Current session user
+        docId: doc._id, // Current session doc
       };
     });
+    const toFollow = userFollowers.map((follower) => {
+      clearHash(follower.user);
+      return {
+        user: follower.user,
+        userToFollow: doc.user._id,
+        reference: username,
+      };
+    });
+    await ToFollow.insertMany(toFollow);
     await Feed.insertMany(newFeedItems);
     await Activity.create({
       user: username, // Your id

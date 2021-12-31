@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 
 const snippetSchema = new mongoose.Schema(
   {
-    data: String,
+    code: String,
     name: String,
     user: {
       type: mongoose.Schema.Types.ObjectId,

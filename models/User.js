@@ -46,8 +46,9 @@ const userSchema = new mongoose.Schema({
 
 
 userSchema.statics.login = async function (username, password) {
-    console.log('ran')
-    const user = await this.findOne({ username }).lean();
+  console.log(username, password);
+  console.log("ran");
+  const user = await this.findOne({ username }).lean();
     if (user) {
         const same = await bcrypt.compare(password, user.password);
         console.log("The same", same);

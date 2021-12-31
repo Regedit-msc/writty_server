@@ -5,9 +5,10 @@ const { extractJWT } = require("../utils/jwt");
 
 const router = require("express").Router();
 const path = "/";
+const cleanCache = require("../utils/cleanCache");
 router.post(
   "/create/snippet",
-  clearHash,
+  cleanCache,
   extractJWT,
   isUserVerified,
   createSnippet

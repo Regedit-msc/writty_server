@@ -13,6 +13,7 @@ const { userModel } = require("../utils/cron_job");
 const { clearHash } = require("../utils/cache");
 const Feed = require("../models/Feed");
 const Activity = require("../models/Activity");
+const ToFollow = require("../models/ToFollow");
 const details = async (req, res, next) => {
   const { username } = req.locals;
   const { found, user } = await findUser({ _id: username });
@@ -146,7 +147,8 @@ const follow = async (req, res, next) => {
   if (!followUserFound)
     return res.status(200).json({ message: "Not Found", success: false });
   const { user } = await findUser({ _id: followId });
-  const userFollowers = user?.followers;
+  const userFollowers = user?.followers; // To follow followers
+  const whoIsFollowingFollowers = followUser?.followers; // Who is following followers
   const alreadyFollowed = userFollowers.findIndex((e) => e.user == userId);
   console.log(alreadyFollowed);
   if (alreadyFollowed === -1) {
@@ -155,7 +157,6 @@ const follow = async (req, res, next) => {
       { followers: [...user.followers, { user: userId }] }
     );
 
-    clearHash(followId);
     const payload = JSON.stringify({
       title: "New Follower",
       body: `${followUser.username} followed you.`,
@@ -171,20 +172,32 @@ const follow = async (req, res, next) => {
       `${`${followUser.username} followed you.`}`,
       userId
     );
-    const newFeedItems = userFollowers.map((follower) => {
+    const newFeedItems = whoIsFollowingFollowers.map((follower) => {
       clearHash(follower.user);
       return {
-        user: follower.user,
+        whoFollowedId: userId, // Current session user
+        user: follower.user, // Follower userId
         type: "follow",
-        followedId: user._id,
+        followedId: followId, // Person who was followed
       };
     });
+    const toFollow = whoIsFollowingFollowers.map((follower) => {
+      clearHash(follower.user);
+      return {
+        user: follower.user, // Follower userId
+        userToFollow: followId, // Person who was followed
+        reference: userId,
+      };
+    });
+    await ToFollow.insertMany(toFollow);
     await Feed.insertMany(newFeedItems);
     await Activity.create({
       user: userId, // Your id
       type: "follow",
       followedId: user._id,
     });
+    clearHash(userId);
+    clearHash(followId);
     if (updated)
       return res.status(200).json({ message: "Followed.", success: true });
   } else {
@@ -197,6 +210,11 @@ const follow = async (req, res, next) => {
       return res.status(200).json({ message: "Unfollowed.", success: true });
   }
 };
+
+const getFollowers = async (req, res, next) => {
+  res.status(200).json({ message: res.paginatedResults, success: true });
+};
+
 module.exports = {
   details,
   userDetailsShort,
@@ -204,4 +222,5 @@ module.exports = {
   searchUsers,
   onboardUser,
   follow,
+  getFollowers,
 };

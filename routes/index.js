@@ -13,7 +13,8 @@ const postRoutes = require("./post");
 const snippetRoutes = require("./snippet");
 const feedRoutes = require("./feed");
 const activityRoutes = require("./activity");
-
+const imagePostRoutes = require("./image_post");
+const toFollowRoutes = require("./tofollow");
 const path = "/";
 router.use(authRoutes.path, authRoutes.router);
 router.use(likeRoutes.path, likeRoutes.router);
@@ -29,4 +30,6 @@ router.use(postRoutes.path, postRoutes.router);
 router.use(snippetRoutes.path, snippetRoutes.router);
 router.use(feedRoutes.path, feedRoutes.router);
 router.use(activityRoutes.path, activityRoutes.router);
+router.use(imagePostRoutes.path, imagePostRoutes.router);
+router.use(toFollowRoutes.path, toFollowRoutes.router);
 module.exports = { router, path };

@@ -6,17 +6,26 @@ const { findUser } = require("../utils/user_utils");
 
 const createSnippet = async (req, res, next) => {
   const { username: userId } = req.locals;
+  const { code, language, name } = req.body;
   const { user, found } = await findUser({ _id: userId });
-  const snippet = await Snippet.create({ ...req.body, user: userId });
+
+  const snippet = await Snippet.create({ code, language, name, user: userId });
   if (found) {
-    const newFeedItems = user?.followers.map((follower) => {
-      clearHash(follower.user);
-      return {
-        user: follower.user,
+    const newFeedItems = [
+      {
+        user: userId,
         type: "snippet",
         snippetId: snippet._id,
-      };
-    });
+      },
+      ...user?.followers.map((follower) => {
+        clearHash(follower.user);
+        return {
+          user: follower.user,
+          type: "snippet",
+          snippetId: snippet._id,
+        };
+      }),
+    ];
     await Feed.insertMany(newFeedItems);
     await Activity.create({
       user: userId, // Your id

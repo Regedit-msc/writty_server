@@ -21,7 +21,7 @@ const postSchema = new mongoose.Schema(
       ref: "user",
       required: true,
     },
-    image: String,
+    imageUrl: String,
   },
   { timestamps: true }
 );
