@@ -151,6 +151,10 @@ const createComment = async (req, res, next) => {
     .json({ message: "Commented on some code.", success: updated });
 };
 
+const getUserDocs = (req, res, next) => {
+  res.status(200).json({ message: res.paginatedResults, success: true });
+};
+
 module.exports = {
   detailsPublic,
   paginatedPub,
@@ -165,4 +169,5 @@ module.exports = {
   getCode,
   createComment,
   getCodeWithName,
+  getUserDocs,
 };

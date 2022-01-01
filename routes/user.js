@@ -33,4 +33,5 @@ router.get(
   paginateFollow,
   getFollowers
 );
+
 module.exports = { router, path };

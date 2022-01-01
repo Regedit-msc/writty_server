@@ -43,7 +43,6 @@ const cb = async (accessToken, refreshToken, profile, done) => {
     keys({
       actualName: null,
       provider: null,
-      profileImageUrl: null,
       sId: null,
     })
   );
@@ -52,7 +51,6 @@ const cb = async (accessToken, refreshToken, profile, done) => {
     keys({
       actualName: null,
       provider: null,
-      profileImageUrl: null,
       sId: null,
     })
   );

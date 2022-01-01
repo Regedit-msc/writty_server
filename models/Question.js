@@ -7,7 +7,7 @@ const questionSchema = new mongoose.Schema(
       ref: "user",
       required: true,
     },
-    tags: [],
+    tags: [String],
     question: String,
     imageUrls: [],
     answers: [],

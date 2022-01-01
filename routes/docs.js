@@ -12,8 +12,10 @@ const {
   getCode,
   createComment,
   getCodeWithName,
+  getUserDocs,
 } = require("../controllers/docs");
 const isUserVerified = require("../middlewares/verify_user");
+const { paginateUserDocs } = require("../middlewares/paginated_user_docs");
 const cleanCache = require("../utils/cleanCache");
 const { extractJWT } = require("../utils/jwt");
 const { paginatedDocs } = require("../utils/paginateDocs");
@@ -59,7 +61,7 @@ router.post(
 );
 router.get("/get/comments", getComments);
 router.get("/get/code", getCode);
-router.get("/get/code", getCodeWithName);
+router.get("/get/code/with/name", getCodeWithName);
 router.post(
   "/create/comment",
   cleanCache,
@@ -67,5 +69,6 @@ router.post(
   isUserVerified,
   createComment
 );
+router.get("/get/user/docs", paginateUserDocs, getUserDocs);
 
 module.exports = { router, path };

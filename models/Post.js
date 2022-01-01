@@ -16,6 +16,7 @@ const postSchema = new mongoose.Schema(
   {
     badges: [badgeSchema],
     body: String,
+    tags: [String],
     user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "user",

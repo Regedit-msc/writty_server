@@ -7,7 +7,7 @@ const imagePostSchema = new mongoose.Schema(
       ref: "user",
       required: true,
     },
-    tags: [],
+    tags: [String],
     imageUrl: String,
   },
   { timestamps: true }
