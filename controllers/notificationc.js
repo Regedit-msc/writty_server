@@ -19,5 +19,8 @@ const notificationsGet =async (req, res, next) => {
          res.status(200).json({ message: "Not found", success: false })
     }
 }
+const paginatedNotifications = async (req, res, next) => {
+  res.status(200).json({ message: res.paginatedResults, success: true });
+};
 
-module.exports = { notificationc, notificationsGet }
+module.exports = { notificationc, notificationsGet, paginatedNotifications };

@@ -1,6 +1,5 @@
 const Notification = require("../../models/Notification");
 
-
 const findNotifications = async (searchParam) => {
     try {
         const notifications = await Notification.find(
