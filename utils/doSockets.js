@@ -291,7 +291,7 @@ const doSockets = () => {
     socket.on(
       "image",
       async ({ b64, type, userID, room: roomInUse, caption }) => {
-        console.log({ type, userID, room: roomInUse, caption });
+        // console.log({ b64, type, userID, room: roomInUse, caption });
         imagekit.upload(
           {
             file: b64,
@@ -300,15 +300,13 @@ const doSockets = () => {
           async function (error, result) {
             if (error) console.log(error);
             else {
-              chatIO
-                .to(roomInUse)
-                .emit("image", {
-                  body: result.url,
-                  user: { _id: userID },
-                  type: "image",
-                  caption,
-                  format: type,
-                });
+              chatIO.to(roomInUse).emit("image", {
+                body: result.url,
+                user: { _id: userID },
+                type: "image",
+                caption,
+                format: type,
+              });
               await Message.create({
                 user: userID,
                 room: roomInUse,

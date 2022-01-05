@@ -12,7 +12,7 @@ async function paginateToFollow(req, res, next) {
   const endIndex = page * limit;
 
   const results = {};
-  if (endIndex < (await tofollow.length)) {
+  if (endIndex < tofollow.length) {
     results.next = {
       page: page + 1,
       limit: limit,

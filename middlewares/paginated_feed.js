@@ -42,6 +42,11 @@ async function paginateFeed(req, res, next) {
         },
         {
           path: "docId",
+          populate: {
+            path: "user",
+            model: "user",
+            select: "username profileImageUrl about userSkills",
+          },
         },
         {
           path: "snippetId",

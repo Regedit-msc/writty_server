@@ -150,6 +150,14 @@ const follow = async (req, res, next) => {
   const userFollowers = user?.followers; // To follow followers
   const whoIsFollowingFollowers = followUser?.followers; // Who is following followers
   const alreadyFollowed = userFollowers.findIndex((e) => e.user == userId);
+  const toFollow = whoIsFollowingFollowers.map((follower) => {
+    clearHash(follower.user);
+    return {
+      user: follower.user, // Follower userId
+      userToFollow: followId, // Person who was followed
+      reference: userId,
+    };
+  });
   console.log(alreadyFollowed);
   if (alreadyFollowed === -1) {
     const { updated } = await updateUser(
@@ -181,14 +189,7 @@ const follow = async (req, res, next) => {
         followedId: followId, // Person who was followed
       };
     });
-    const toFollow = whoIsFollowingFollowers.map((follower) => {
-      clearHash(follower.user);
-      return {
-        user: follower.user, // Follower userId
-        userToFollow: followId, // Person who was followed
-        reference: userId,
-      };
-    });
+
     await ToFollow.insertMany(toFollow);
     await Feed.insertMany(newFeedItems);
     await Activity.create({
@@ -205,6 +206,7 @@ const follow = async (req, res, next) => {
       { _id: followId },
       { followers: [...user.followers.filter((e) => e.user != userId)] }
     );
+    await ToFollow.deleteMany({ userToFollow: followId });
     clearHash(followId);
     if (updated)
       return res.status(200).json({ message: "Unfollowed.", success: true });

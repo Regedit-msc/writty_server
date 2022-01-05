@@ -1,7 +1,10 @@
 const { findDoc, updateDoc } = require("../utils/doc_utils");
 const { createNotification } = require("../utils/notification_utils");
+const { clearHash } = require("../utils/cache");
 const { findUser } = require("../utils/user_utils");
 const webPush = require("../utils/push_utils/index");
+const ToFollow = require("../models/ToFollow");
+const Feed = require("../models/Feed");
 const Activity = require("../models/Activity");
 
 const like = async (req, res, next) => {
@@ -15,7 +18,14 @@ const like = async (req, res, next) => {
     if (doc.user._id == id) return true;
     return false;
   }
-
+  const toFollow = userFollowers.map((follower) => {
+    clearHash(follower.user);
+    return {
+      user: follower.user,
+      userToFollow: doc.user._id,
+      reference: username,
+    };
+  });
   if (alreadyLiked === -1) {
     const { updated } = await updateDoc(
       { _id: doc._id },
@@ -47,14 +57,7 @@ const like = async (req, res, next) => {
         docId: doc._id, // Current session doc
       };
     });
-    const toFollow = userFollowers.map((follower) => {
-      clearHash(follower.user);
-      return {
-        user: follower.user,
-        userToFollow: doc.user._id,
-        reference: username,
-      };
-    });
+
     await ToFollow.insertMany(toFollow);
     await Feed.insertMany(newFeedItems);
     await Activity.create({
@@ -69,6 +72,7 @@ const like = async (req, res, next) => {
       { _id: doc._id },
       { likes: [...doc.likes.filter((e) => e.user != username)] }
     );
+    await ToFollow.deleteMany({ userToFollow: doc.user._id });
     if (updated)
       return res.status(200).json({ message: "Unliked code.", success: true });
   }
