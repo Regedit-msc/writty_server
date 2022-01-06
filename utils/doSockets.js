@@ -329,16 +329,19 @@ const doSockets = () => {
               });
               if (!notUser) return;
 
-              webPush
-                .sendNotification(notUser?.user?.sub, payload)
-                .then((result) => console.log(result))
-                .catch((e) => console.log(e.stack));
-
-              await createNotification(
-                notUser?.user?._id,
-                `${socket?.currentUser?.username} sent you image.`,
-                userID
-              );
+                await createNotification(
+                  notUser?.user?._id,
+                  `${socket?.currentUser?.username} sent you image.`,
+                  userID
+                );
+                if (notUser?.user?.sub) {
+                  webPush
+                    .sendNotification(notUser?.user?.sub, payload)
+                    .then((result) => console.log(result))
+                    .catch((e) => console.log(e.stack));
+                }
+                
+            
             }
           }
         );
