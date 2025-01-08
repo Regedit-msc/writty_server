@@ -12,8 +12,7 @@ const paginatedPub = async (req, res, next) => {
 const detailsPublic = async (req, res, next) => {
   const { name } = req.query;
   const { found, user } = await findUser({ username: name });
-  console.log(user);
-  const { users } = await getAllUsers({ "followers.user": user._id });
+  const { users } = await getAllUsers({ "followers.user": user?._id });
   if (!found)
     return res.status(200).json({ message: "User not found", success: false });
   const { docs } = await getAllDocsByUsers({ user: user._id, private: false });

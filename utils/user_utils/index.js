@@ -52,7 +52,6 @@ const findUser = async (searchParam) => {
 
     try {
         if (Object.keys(searchParam).includes("_id")) {
-            console.log("Has id");
             const user = await User.findOne(
                 searchParam
             ).cache({ key: searchParam._id })

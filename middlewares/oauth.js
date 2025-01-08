@@ -8,7 +8,6 @@ const { clearHash } = require("../utils/cache");
 const { v4: uuidv4 } = require("uuid");
 
 const cb = async (accessToken, refreshToken, profile, done) => {
-  console.log(profile, "here");
   const pUser =
     profile.provider === "google"
       ? {
