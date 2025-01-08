@@ -5,12 +5,33 @@ const notificationRoute = require("./notification")
 const userRoutes = require("./user");
 const docRoutes = require("./docs");
 const roomRoutes = require('./room');
-
-const path = "/"
+const badgeRoutes = require("./badge");
+const skillsRoutes = require("./skills");
+const languageRoutes = require("./language");
+const questionRoutes = require("./question");
+const postRoutes = require("./post");
+const snippetRoutes = require("./snippet");
+const feedRoutes = require("./feed");
+const activityRoutes = require("./activity");
+const imagePostRoutes = require("./image_post");
+const toFollowRoutes = require("./tofollow");
+const tagRoutes = require("./tags");
+const path = "/";
 router.use(authRoutes.path, authRoutes.router);
 router.use(likeRoutes.path, likeRoutes.router);
 router.use(notificationRoute.path, notificationRoute.router);
 router.use(docRoutes.path, docRoutes.router);
 router.use(userRoutes.path, userRoutes.router);
 router.use(roomRoutes.path, roomRoutes.router);
+router.use(badgeRoutes.path, badgeRoutes.router);
+router.use(skillsRoutes.path, skillsRoutes.router);
+router.use(languageRoutes.path, languageRoutes.router);
+router.use(questionRoutes.path, questionRoutes.router);
+router.use(postRoutes.path, postRoutes.router);
+router.use(snippetRoutes.path, snippetRoutes.router);
+router.use(feedRoutes.path, feedRoutes.router);
+router.use(activityRoutes.path, activityRoutes.router);
+router.use(imagePostRoutes.path, imagePostRoutes.router);
+router.use(toFollowRoutes.path, toFollowRoutes.router);
+router.use(tagRoutes.path, tagRoutes.router);
 module.exports = { router, path };

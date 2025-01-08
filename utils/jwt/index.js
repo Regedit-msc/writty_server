@@ -9,7 +9,7 @@ const signJWT = (username, expires, callback) => {
                 username: username,
             },
             process.env.JWT_TOKEN_SECRET,
-            expires ? { expiresIn: expires } : { expiresIn: '3h' },
+            expires ? { expiresIn: expires } : { expiresIn: '7h' },
             (error, token) => {
                 if (error) {
                     callback(error, null);

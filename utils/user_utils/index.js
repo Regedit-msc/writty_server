@@ -1,24 +1,31 @@
 
-const User = require('../../User');
+const User = require('../../models/User');
 const bcrypt = require("bcrypt");
 const { AvatarGenerator } = require('random-avatar-generator');
 const generator = new AvatarGenerator();
 
-async function createUser(username, email, password) {
+async function createUser(username, email, password, otp = null) {
     const rounds = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(password, rounds);
 
-    const user = await User.create({
+    const user = await User.create(otp ? {
         username: username,
         email: email,
         password: passwordHash,
-        profileImageUrl: generator.generateRandomAvatar(username)
+        profileImageUrl: generator.generateRandomAvatar(username),
+
+    } : {
+        username: username,
+        email: email,
+        password: passwordHash,
+        profileImageUrl: generator.generateRandomAvatar(username),
+        otp: otp
     });
 
     if (user) {
-        return { saved: true };
+        return { saved: true, user };
     } else {
-        return { saved: false };
+        return { saved: false, user };
     }
 }
 
@@ -45,7 +52,6 @@ const findUser = async (searchParam) => {
 
     try {
         if (Object.keys(searchParam).includes("_id")) {
-            console.log("Has id");
             const user = await User.findOne(
                 searchParam
             ).cache({ key: searchParam._id })
@@ -64,15 +70,18 @@ const findUser = async (searchParam) => {
     }
 }
 
-const getAllUsers = async () => {
-    try {
-        const users = await User.find({}).select('name email registrationMonth').lean().exec()
-        if (users) return { foundUsers: true, users };
-        return { foundUsers: false };
-    } catch {
-        return { foundUsers: false };
-    }
-}
+const getAllUsers = async (searchParam = {}) => {
+  try {
+    const users = await User.find(searchParam)
+      .select("username email  profileImageUrl about userSkills")
+      .lean()
+      .exec();
+    if (users) return { foundUsers: true, users };
+    return { foundUsers: false };
+  } catch {
+    return { foundUsers: false };
+  }
+};
 
 
 const deleteUser = async (searchParam) => {
@@ -85,7 +94,18 @@ const deleteUser = async (searchParam) => {
     }
 }
 
+const getAllUsersByName = async (username, scopes) => {
+    try {
+        //TODO: optimize
+        const users = await User.find({ username }).select(scopes).lean().exec();
+        if (users) return { foundUsers: true, users };
+    } catch {
+        return { foundUsers: false };
+    }
+}
+
 module.exports = {
+    getAllUsersByName,
     updateUser,
     findUser,
     getAllUsers,

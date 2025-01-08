@@ -1,5 +1,4 @@
-const Notification = require("../../Notification");
-
+const Notification = require("../../models/Notification");
 
 const findNotifications = async (searchParam) => {
     try {
@@ -7,10 +6,10 @@ const findNotifications = async (searchParam) => {
             searchParam
         ).populate([{
             path: 'user',
-            select: "username profileImageUrl",
+            select: "username profileImageUrl about userSkills",
         }, {
             path: 'from',
-            select: "username profileImageUrl",
+            select: "username profileImageUrl about userSkills",
         }]).lean().exec();
         if (notifications) return { found: true, notifications };
         return { found: false };

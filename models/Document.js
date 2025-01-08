@@ -31,7 +31,7 @@ const docSchema = new mongoose.Schema({
     default: []
   }
 }, { timestamps: true })
-
-const Doc = new mongoose.model('document', docSchema)
+docSchema.index({ name: 1, type: -1 });
+const Doc = new mongoose.model('document', docSchema);
 
 module.exports = Doc;
